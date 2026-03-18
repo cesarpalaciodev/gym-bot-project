@@ -5,29 +5,21 @@ import shutil
 from datetime import datetime, time
 from dateutil.relativedelta import relativedelta
 from dotenv import load_dotenv
-load_dotenv()
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill
-from supabase import create_client
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-if not SUPABASE_URL or not SUPABASE_KEY:
-    
-    raise ValueError("Faltan variables de entorno de Supabase")
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ==================================================
 # CONFIGURACION
 # ==================================================
 
+load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-DATA_FILE = "/var/data/miembros.json"
+DATA_FILE = "data/miembros.json"
 EXCEL_FILE = "reports/reporte_gimnasio.xlsx"
 BACKUP_FOLDER = "backup"
 
@@ -36,6 +28,7 @@ BACKUP_FOLDER = "backup"
 # ==================================================
 
 logging.basicConfig(
+    filename="logs/bot.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -55,26 +48,28 @@ def es_admin(update):
 
 
 def cargar_datos():
+    # Crear carpeta si no existe
+    if not os.path.exists("data"):
+        os.makedirs("data")
+
+    # Crear archivo si no existe
     if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
+        with open(DATA_FILE, "w") as f:
             json.dump({}, f)
         return {}
 
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
+    # Leer datos
+    with open(DATA_FILE, "r") as f:
         return json.load(f)
 
+
 def guardar_datos(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
+    if not os.path.exists("data"):
+        os.makedirs("data")
+
+    with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=4)
-def guardar_miembro(nombre, fecha):
-    data = {
-        "nombre": nombre,
-        "fecha": fecha
-    }
 
-    response = supabase.table("miembros").insert(data).execute()
-
-    print(response)
 
 def fecha_valida(fecha):
     try:
@@ -107,6 +102,19 @@ async def backup(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # BACKUP AUTOMATICO
 # ==================================================
 
+def limpiar_backups():
+
+    if not os.path.exists(BACKUP_FOLDER):
+        return
+
+    archivos = sorted(os.listdir(BACKUP_FOLDER))
+
+    if len(archivos) > 30:
+        eliminar = archivos[:-30]
+
+        for archivo in eliminar:
+            os.remove(f"{BACKUP_FOLDER}/{archivo}")
+
 async def backup_automatico(context: ContextTypes.DEFAULT_TYPE):
 
     if not os.path.exists(BACKUP_FOLDER):
@@ -117,6 +125,7 @@ async def backup_automatico(context: ContextTypes.DEFAULT_TYPE):
 
     shutil.copy(DATA_FILE, archivo_backup)
 
+    limpiar_backups()
 # ==================================================
 # EXCEL
 # ==================================================
@@ -338,7 +347,6 @@ async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             data[nombre] = fecha
             guardar_datos(data)
-            guardar_miembro(nombre, fecha)
 
             await update.message.reply_text("Miembro agregado")
             del user_state[user_id]
