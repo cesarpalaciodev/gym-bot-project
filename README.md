@@ -43,8 +43,8 @@ gym_bot/
 
 ### 1. Clone the repository
 
-git clone https://github.com/your-username/your-repo.git
-cd your-repo
+git clone https://github.com/cesarpalaciodev/gym-bot-project.git
+cd gym-bot-project
 
 ---
 
