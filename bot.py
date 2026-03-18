@@ -5,12 +5,12 @@ import shutil
 from datetime import datetime, time
 from dateutil.relativedelta import relativedelta
 from dotenv import load_dotenv
+load_dotenv()
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill
 from supabase import create_client
-import os
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -20,8 +20,6 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ==================================================
 # CONFIGURACION
 # ==================================================
-
-load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
