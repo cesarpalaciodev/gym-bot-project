@@ -19,7 +19,7 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-DATA_FILE = "miembros.json"
+DATA_FILE = "/var/data/miembros.json"
 EXCEL_FILE = "reports/reporte_gimnasio.xlsx"
 BACKUP_FOLDER = "backup"
 
@@ -48,14 +48,15 @@ def es_admin(update):
 
 def cargar_datos():
     if not os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump({}, f)
         return {}
 
-    with open(DATA_FILE, "r") as f:
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
-
 def guardar_datos(data):
-    with open(DATA_FILE, "w") as f:
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
 
 
