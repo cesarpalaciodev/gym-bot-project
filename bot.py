@@ -19,7 +19,7 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-DATA_FILE = "data/miembros.json"
+DATA_FILE = "miembros.json"
 EXCEL_FILE = "reports/reporte_gimnasio.xlsx"
 BACKUP_FOLDER = "backup"
 
