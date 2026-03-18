@@ -2,3 +2,4 @@ python-telegram-bot==20.7
 apscheduler==3.11.2
 python-dotenv==1.2.2
 python-dateutil
+openpyxl
