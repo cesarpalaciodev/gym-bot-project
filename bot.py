@@ -9,6 +9,13 @@ from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill
+from supabase import create_client
+import os
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ==================================================
 # CONFIGURACION
@@ -58,7 +65,15 @@ def cargar_datos():
 def guardar_datos(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
+def guardar_miembro(nombre, fecha):
+    data = {
+        "nombre": nombre,
+        "fecha": fecha
+    }
 
+    response = supabase.table("miembros").insert(data).execute()
+
+    print(response)
 
 def fecha_valida(fecha):
     try:
@@ -322,6 +337,7 @@ async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             data[nombre] = fecha
             guardar_datos(data)
+            guardar_miembro(nombre, fecha)
 
             await update.message.reply_text("Miembro agregado")
             del user_state[user_id]
