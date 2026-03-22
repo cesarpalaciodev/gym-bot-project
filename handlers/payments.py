@@ -126,15 +126,14 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             
             grace_period = False
             if state["last_payment"]:
-                vencimiento = datetime.strptime(state["last_payment"]["due_date"], "%Y-%m-%d").date()
-                dias_vencido = calcular_dias_vencido(vencimiento)
+                ultimo_pago_date = datetime.strptime(state["last_payment"]["payment_date"], "%Y-%m-%d").date()
+                vencimiento_anterior = datetime.strptime(state["last_payment"]["due_date"], "%Y-%m-%d").date()
+                dias_vencido = calcular_dias_vencido(vencimiento_anterior)
                 
                 if dias_vencido > 4:
                     nuevo_vencimiento = calcular_proximo_vencimiento(hoy)
                 else:
-                    nuevo_vencimiento = calcular_proximo_vencimiento(
-                        datetime.strptime(state["last_payment"]["payment_date"], "%Y-%m-%d").date()
-                    )
+                    nuevo_vencimiento = calcular_proximo_vencimiento(ultimo_pago_date)
                     grace_period = True
             else:
                 nuevo_vencimiento = calcular_proximo_vencimiento(hoy)
