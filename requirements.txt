@@ -1,6 +1,6 @@
-python-telegram-bot==20.7
+python-telegram-bot>=21.0
 httpx>=0.25.2
 python-dotenv
 python-dateutil
 openpyxl
-pymongo==4.6.0
+pymongo>=4.6.0
