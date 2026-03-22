@@ -14,6 +14,7 @@ env/
 
 # Logs (generated at runtime)
 *.log
+logs/
 
 # Reports (generated at runtime)
 reports/

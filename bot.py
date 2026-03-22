@@ -1,9 +1,12 @@
 import logging
 import os
 from datetime import time
+import signal
 
 os.makedirs("logs", exist_ok=True)
 os.makedirs("reports", exist_ok=True)
+
+PORT = int(os.environ.get("PORT", 8000))
 
 from telegram import Update
 from telegram.ext import (
@@ -87,9 +90,9 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, botones))
     
     logger.info("Bot iniciado")
-    print("Bot iniciado - presiona Ctrl+C para detener")
+    print("Bot corriendo...", flush=True)
     
-    app.run_polling()
+    app.run_polling(poll_interval=3, drop_pending_updates=True)
 
 
 if __name__ == "__main__":
