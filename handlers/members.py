@@ -1,6 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from datetime import datetime
+from bson import ObjectId
 import logging
 
 from database import get_collection
@@ -214,7 +215,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             del user_state[user_id]
         
         elif estado == "eliminar_miembro":
-            member = members.find_one({"name": texto, "active": True})
+            member = members.find_one({"name": texto})
             payments_col = get_collection("payments")
             
             logger.info(f"Buscando miembro para eliminar: '{texto}'")
@@ -223,7 +224,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             if not member:
                 await update.message.reply_text(f"Miembro '{texto}' no encontrado")
             else:
-                members.delete_one({"_id": member["_id"]})
+                members.delete_one({"_id": ObjectId(member["_id"])})
                 payments_col.delete_many({"member_id": str(member["_id"])})
                 logger.info(f"Miembro eliminado: {member['name']}")
                 await update.message.reply_text(f"✅ '{texto}' eliminado de la base de datos")
@@ -241,9 +242,9 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 if not nombre:
                     continue
                 
-                member = members.find_one({"name": nombre, "active": True})
+                member = members.find_one({"name": nombre})
                 if member:
-                    members.delete_one({"_id": member["_id"]})
+                    members.delete_one({"_id": ObjectId(member["_id"])})
                     payments_col.delete_many({"member_id": str(member["_id"])})
                     eliminados += 1
                 else:
