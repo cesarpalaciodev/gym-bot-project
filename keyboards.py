@@ -70,10 +70,7 @@ menu_admin = ReplyKeyboardMarkup(
 
 menu_planes = ReplyKeyboardMarkup(
     [
-        ["1. Mensual ($500)"],
-        ["2. Trimestral ($1,350)"],
-        ["3. Semestral ($2,500)"],
-        ["4. Anual ($4,500)"],
+        ["1. Mensual ($70,000)"],
         ["⬅️ Cancelar"],
     ],
     resize_keyboard=True,
