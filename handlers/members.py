@@ -217,11 +217,15 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             member = members.find_one({"name": texto, "active": True})
             payments_col = get_collection("payments")
             
+            logger.info(f"Buscando miembro para eliminar: '{texto}'")
+            logger.info(f"Miembro encontrado: {member}")
+            
             if not member:
-                await update.message.reply_text("Miembro no encontrado")
+                await update.message.reply_text(f"Miembro '{texto}' no encontrado")
             else:
                 members.delete_one({"_id": member["_id"]})
                 payments_col.delete_many({"member_id": str(member["_id"])})
+                logger.info(f"Miembro eliminado: {member['name']}")
                 await update.message.reply_text(f"✅ '{texto}' eliminado de la base de datos")
             
             del user_state[user_id]
