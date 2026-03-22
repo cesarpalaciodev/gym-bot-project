@@ -43,10 +43,11 @@ async def deudores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         
         if hoy > vencimiento:
             dias_vencido = (hoy - vencimiento).days
-            texto += f"• {member['name']}\n"
-            texto += f"  💀 Vencio: {last_payment['due_date']}\n"
-            texto += f"  📅 Dias vencido: {dias_vencido}\n\n"
-            deudores_count += 1
+            if dias_vencido > 4:
+                texto += f"• {member['name']}\n"
+                texto += f"  💀 Vencio: {last_payment['due_date']}\n"
+                texto += f"  📅 Dias vencido: {dias_vencido}\n\n"
+                deudores_count += 1
     
     if deudores_count == 0:
         texto = "✅ No hay miembros con pagos vencidos"
@@ -87,13 +88,11 @@ async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         
         if last_payment:
             vencimiento = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
+            dias_vencido = (hoy - vencimiento).days
             
-            if hoy <= vencimiento:
+            if dias_vencido <= 4:
                 estado = "Al dia"
                 fill = verde
-            elif (hoy - vencimiento).days <= 4:
-                estado = "Gracia"
-                fill = amarillo
             else:
                 estado = "Vencido"
                 fill = rojo
