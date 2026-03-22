@@ -215,15 +215,14 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         
         elif estado == "eliminar_miembro":
             member = members.find_one({"name": texto, "active": True})
+            payments_col = get_collection("payments")
             
             if not member:
                 await update.message.reply_text("Miembro no encontrado")
             else:
-                members.update_one(
-                    {"_id": member["_id"]},
-                    {"$set": {"active": False, "updated_at": datetime.utcnow()}}
-                )
-                await update.message.reply_text(f"✅ '{texto}' eliminado")
+                members.delete_one({"_id": member["_id"]})
+                payments_col.delete_many({"member_id": str(member["_id"])})
+                await update.message.reply_text(f"✅ '{texto}' eliminado de la base de datos")
             
             del user_state[user_id]
         
@@ -231,6 +230,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             nombres = texto.split("\n")
             eliminados = 0
             no_encontrados = 0
+            payments_col = get_collection("payments")
             
             for nombre in nombres:
                 nombre = nombre.strip()
@@ -239,10 +239,8 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 
                 member = members.find_one({"name": nombre, "active": True})
                 if member:
-                    members.update_one(
-                        {"_id": member["_id"]},
-                        {"$set": {"active": False, "updated_at": datetime.utcnow()}}
-                    )
+                    members.delete_one({"_id": member["_id"]})
+                    payments_col.delete_many({"member_id": str(member["_id"])})
                     eliminados += 1
                 else:
                     no_encontrados += 1
