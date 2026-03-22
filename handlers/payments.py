@@ -4,7 +4,7 @@ from datetime import datetime, date
 import logging
 
 from database import get_collection
-from keyboards import menu_pagos, menu_planes, menu_confirmar
+from keyboards import menu_pagos, menu_planes, menu_confirmar, menu_principal
 from utils import (
     format_fecha,
     calcular_proximo_vencimiento,
@@ -159,7 +159,8 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 f"💵 Monto: ${plan['price']}\n"
                 f"📅 Pago: {payment_date_str}\n"
                 f"📅 Vence: {format_fecha(nuevo_vencimiento)}\n"
-                f"{'⚠️ Periodo de gracia' if grace_period else ''}"
+                f"{'⚠️ Periodo de gracia' if grace_period else ''}",
+                reply_markup=menu_principal
             )
             
             del payment_state[user_id]
