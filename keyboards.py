@@ -31,7 +31,7 @@ menu_pagos = ReplyKeyboardMarkup(
 
 menu_reportes = ReplyKeyboardMarkup(
     [
-        ["⚠️ Deudores", "📊 Excel"],
+        ["📊 Excel"],
         ["⬅️ Volver"],
     ],
     resize_keyboard=True,
