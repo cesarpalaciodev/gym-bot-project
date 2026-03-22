@@ -1,146 +1,176 @@
 # Gym Management Telegram Bot
 
-A Telegram bot to manage gym members, payments, and expiration dates efficiently.
-
----
-
-## Overview
-
-This Telegram bot allows you to manage gym members, track payments, and monitor expiration dates without the need for complex systems.
+A Telegram bot to manage gym members, payments, and expiration dates with MongoDB.
 
 ---
 
 ## Features
 
-- Member management (add, search, delete)
-- Bulk member registration
-- Bulk delete functionality
-- Payment tracking
-- Automatic expiration date calculation
+- Member management (add, search, delete, bulk)
+- Payment tracking with grace period (1-4 days)
+- Membership plans (Monthly, Quarterly, Semi-annual, Annual)
+- Payment history
 - Overdue member detection
-- Excel report generation
-- Automatic backups
-- Admin-only access control
+- Statistics dashboard (active members, income, expirations)
+- Excel/CSV/PDF export
+- Multi-admin support with roles
+- Automatic daily notifications at 5 AM
+- MongoDB Atlas database
+- Deploy ready for Render
 
 ---
 
 ## Commands
 
-/start - Start the bot  
-/add - Add a new member  
-/list - Show all members  
-/delete - Remove a member  
-/report - Generate Excel report  
-/overdue - Show overdue members  
+/start - Start the bot
+/help - Show all commands
+/backup - Create manual backup
 
----
+### Member Menu
+- ➕ Agregar miembro - Add single member
+- 👥 Agregar varios - Bulk add
+- 🔍 Buscar miembro - Search member
+- 📋 Lista miembros - List all
+- 🗑 Eliminar miembro - Delete one
+- 🗑 Eliminar varios - Bulk delete
 
-## Project Structure
+### Payment Menu
+- 💰 Registrar pago - Register payment
+- 📜 Historial - View history
 
-gym_bot_project/
-├── bot.py  
-├── requirements.txt  
-├── .env  
-├── .gitignore  
-├── data/  
-│   └── miembros.json  
-├── backup/  
-├── logs/  
-├── reports/  
-└── README.md  
+### Reports Menu
+- ⚠️ Deudores - Show overdue
+- 📊 Excel - Generate Excel report
+
+### Statistics Menu
+- 👥 Miembros activos - Active members
+- 💰 Ingresos del mes - Monthly income
+- 📅 Vencimientos - Expirations
+
+### Export Menu
+- 📊 Excel miembros - Export members
+- 📊 Excel pagos - Export payments
+- 📄 PDF resumen - Summary report
+
+### Admin Menu (Super Admin only)
+- ➕ Agregar admin - Add admin
+- 👥 Lista admins - List admins
+- 🗑 Quitar admin - Remove admin
+- 🔄 Cambiar rol - Change role
 
 ---
 
 ## Setup
 
-### 1. Clone the repository
-
-git clone https://github.com/cesarpalaciodev/gym-bot-project.git  
-cd gym-bot-project  
-
----
+### 1. Clone repository
+```bash
+git clone https://github.com/cesarpalaciodev/gym-bot-project.git
+cd gym-bot-project
+```
 
 ### 2. Create virtual environment
-
-python -m venv venv  
-
-#### Activate environment:
-
-Windows  
-venv\Scripts\activate  
-
-Mac / Linux  
-source venv/bin/activate  
-
----
+```bash
+python -m venv venv
+# Windows: venv\Scripts\activate
+# Linux/Mac: source venv/bin/activate
+```
 
 ### 3. Install dependencies
-
-pip install -r requirements.txt  
-
----
+```bash
+pip install -r requirements.txt
+```
 
 ### 4. Environment variables
+Create `.env` file:
+```
+TOKEN=your_telegram_bot_token
+ADMIN_ID=your_telegram_id
+MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/gym
+```
 
-Create a .env file:
-
-TOKEN=your_telegram_bot_token  
-ADMIN_ID=your_telegram_id  
+### 5. MongoDB Atlas
+1. Create free account at mongodb.com
+2. Create cluster (M0 Sandbox - free)
+3. Create database "gym"
+4. Create user with read/write permissions
+5. Get connection string
 
 ---
 
 ## Run
 
-python bot.py  
+```bash
+python bot.py
+```
 
 ---
 
-## Security
+## Deploy on Render
 
-- Uses environment variables for sensitive data  
-- .env is excluded from version control  
-- Admin-restricted commands  
-
----
-
-## Modules
-
-- Members → manage users  
-- Payments → track payments  
-- Reports → Excel + overdue users  
-- Backup → automatic backups  
+1. Push code to GitHub
+2. Create Web Service on Render
+3. Connect GitHub repository
+4. Configure environment variables:
+   - `TOKEN`
+   - `ADMIN_ID`
+   - `MONGO_URI`
+5. Deploy automatically
 
 ---
 
-## Deployment
+## Payment Logic
 
-Ready to deploy on:
+```
+PAYMENT: 20th of any month
+DUE DATE: 20th of next month
 
-- Render  
-- Railway  
-- VPS  
+If pays 1-4 days late (20-24):
+  → GRACE PERIOD → Keep original date
+
+If pays 5+ days late (25+):
+  → LATE PAYMENT → New date = payment day
+```
 
 ---
 
-## Roadmap
+## Membership Plans
 
-- [ ] Payment history  
-- [ ] Automatic reminders  
-- [ ] Database integration (PostgreSQL)  
-- [ ] Web dashboard  
+| Plan | Price | Duration |
+|------|-------|----------|
+| Monthly | $500 | 1 month |
+| Quarterly | $1,350 | 3 months |
+| Semi-annual | $2,500 | 6 months |
+| Annual | $4,500 | 12 months |
+
+---
+
+## Admin Roles
+
+| Role | Permissions |
+|------|-------------|
+| super_admin | Full access + admin management |
+| admin | Members, payments, reports, stats |
+| viewer | Read-only access |
+
+---
+
+## Project Structure
+
+```
+gym_bot_project/
+├── bot.py              # Entry point
+├── config.py           # Configuration
+├── database/           # MongoDB connection
+├── models/             # Data models
+├── handlers/           # Telegram handlers
+├── keyboards.py        # Keyboard menus
+├── utils/             # Utilities
+├── requirements.txt    # Dependencies
+└── render.yaml         # Deploy config
+```
 
 ---
 
 ## License
 
-MIT  
-
----
-
-## Author
-
-Cesar Palacio  
-
----
-
-⭐ If you find this project useful, consider giving it a star!
+MIT - Cesar Palacio

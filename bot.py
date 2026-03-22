@@ -1,465 +1,99 @@
-import json
-import os
 import logging
-import shutil
-from datetime import datetime, time
-from dateutil.relativedelta import relativedelta
-from dotenv import load_dotenv
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from openpyxl import Workbook
-from openpyxl.styles import PatternFill
+import os
+from datetime import time
 
-# ==================================================
-# CONFIGURACION
-# ==================================================
+os.makedirs("logs", exist_ok=True)
+os.makedirs("reports", exist_ok=True)
 
-load_dotenv()
+from telegram import Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    ContextTypes,
+)
 
-TOKEN = os.getenv("TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID"))
-
-DATA_FILE = "data/miembros.json"
-EXCEL_FILE = "reports/reporte_gimnasio.xlsx"
-BACKUP_FOLDER = "backup"
-
-# ==================================================
-# LOGGING
-# ==================================================
+from config import TOKEN, ADMIN_ID
+from database import init_collections
+from models import Admin
+from database import get_collection
+from handlers import (
+    start,
+    help_command,
+    botones,
+    notificacion_5am,
+)
 
 logging.basicConfig(
     filename="logs/bot.log",
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-# ==================================================
-# ESTADO USUARIO
-# ==================================================
-
-user_state = {}
-
-# ==================================================
-# UTILIDADES
-# ==================================================
-
-def es_admin(update):
-    return update.effective_user.id == ADMIN_ID
+logger = logging.getLogger(__name__)
 
 
-def cargar_datos():
-    # Crear carpeta si no existe
-    if not os.path.exists("data"):
-        os.makedirs("data")
-
-    # Crear archivo si no existe
-    if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "w") as f:
-            json.dump({}, f)
-        return {}
-
-    # Leer datos
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
-
-
-def guardar_datos(data):
-    if not os.path.exists("data"):
-        os.makedirs("data")
-
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-
-def fecha_valida(fecha):
+def setup_database() -> None:
     try:
-        datetime.strptime(fecha, "%Y-%m-%d")
-        return True
-    except:
-        return False
+        init_collections()
+        admins = get_collection("admins")
+        
+        if not admins.find_one({"telegram_id": ADMIN_ID}):
+            super_admin = Admin(
+                telegram_id=ADMIN_ID,
+                name="Super Admin",
+                role="super_admin"
+            )
+            admins.insert_one(super_admin.to_dict())
+            logger.info("Super Admin creado")
+        else:
+            logger.info("Super Admin ya existe")
+    except Exception as e:
+        logger.error(f"Error inicializando base de datos: {e}")
+        raise
 
-# ==================================================
-# BACKUP
-# ==================================================
 
-async def backup(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    if not es_admin(update):
+async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id != ADMIN_ID:
         await update.message.reply_text("No autorizado")
         return
-
-    if not os.path.exists(BACKUP_FOLDER):
-        os.makedirs(BACKUP_FOLDER)
-
-    fecha = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    archivo_backup = f"{BACKUP_FOLDER}/miembros_backup_{fecha}.json"
-
-    shutil.copy(DATA_FILE, archivo_backup)
-
-    await update.message.reply_text("✅ Backup creado correctamente")
-
-# ==================================================
-# BACKUP AUTOMATICO
-# ==================================================
-
-def limpiar_backups():
-
-    if not os.path.exists(BACKUP_FOLDER):
-        return
-
-    archivos = sorted(os.listdir(BACKUP_FOLDER))
-
-    if len(archivos) > 30:
-        eliminar = archivos[:-30]
-
-        for archivo in eliminar:
-            os.remove(f"{BACKUP_FOLDER}/{archivo}")
-
-async def backup_automatico(context: ContextTypes.DEFAULT_TYPE):
-
-    if not os.path.exists(BACKUP_FOLDER):
-        os.makedirs(BACKUP_FOLDER)
-
-    fecha = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    archivo_backup = f"{BACKUP_FOLDER}/miembros_backup_{fecha}.json"
-
-    shutil.copy(DATA_FILE, archivo_backup)
-
-    limpiar_backups()
-# ==================================================
-# EXCEL
-# ==================================================
-
-def generar_excel():
-
-    data = cargar_datos()
-
-    wb = Workbook()
-    ws = wb.active
-
-    ws.append(["Nombre", "Vencimiento", "Estado"])
-
-    verde = PatternFill(start_color="90EE90", fill_type="solid")
-    rojo = PatternFill(start_color="FF7F7F", fill_type="solid")
-
-    hoy = datetime.now().date()
-
-    for nombre, fecha in data.items():
-
-        fecha_dt = datetime.strptime(fecha, "%Y-%m-%d").date()
-        vencimiento = fecha_dt + relativedelta(months=1)
-
-        estado = "Al día"
-
-        if hoy >= vencimiento:
-            estado = "Vencido"
-
-        ws.append([nombre, vencimiento.strftime("%Y-%m-%d"), estado])
-
-        fila = ws.max_row
-
-        if estado == "Al día":
-            ws[f"C{fila}"].fill = verde
-        else:
-            ws[f"C{fila}"].fill = rojo
-
-    wb.save(EXCEL_FILE)
-
-# ==================================================
-# MENUS
-# ==================================================
-
-menu_principal = ReplyKeyboardMarkup(
-[
-["👥 Miembros","💰 Pagos"],
-["📊 Reportes"]
-],
-resize_keyboard=True
-)
-
-menu_miembros = ReplyKeyboardMarkup(
-[
-["➕ Agregar miembro","👥 Agregar varios"],
-["🔍 Buscar miembro","📋 Lista miembros"],
-["🗑 Eliminar miembro","🗑 Eliminar varios"],
-["⬅️ Volver"]
-],
-resize_keyboard=True
-)
-
-menu_pagos = ReplyKeyboardMarkup(
-[
-["💰 Registrar pago"],
-["⬅️ Volver"]
-],
-resize_keyboard=True
-)
-
-menu_reportes = ReplyKeyboardMarkup(
-[
-["⚠️ Deudores","📊 Excel"],
-["⬅️ Volver"]
-],
-resize_keyboard=True
-)
-
-# ==================================================
-# START
-# ==================================================
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    if not es_admin(update):
-        await update.message.reply_text("Acceso no autorizado")
-        return
-
-    await update.message.reply_text(
-        "🏋️ Sistema del gimnasio",
-        reply_markup=menu_principal
-    )
-
-# ==================================================
-# FUNCIONES GYM
-# ==================================================
-
-async def lista(update):
-
-    data = cargar_datos()
-
-    if not data:
-        await update.message.reply_text("No hay miembros")
-        return
-
-    texto = "Miembros:\n\n"
-
-    for n, f in data.items():
-        texto += f"{n} - {f}\n"
-
-    await update.message.reply_text(texto)
-
-
-async def deudores(update):
-
-    data = cargar_datos()
-    hoy = datetime.now().date()
-
-    texto = "Deudores:\n\n"
-
-    for n, f in data.items():
-
-        fecha = datetime.strptime(f, "%Y-%m-%d").date()
-        vencimiento = fecha + relativedelta(months=1)
-
-        if hoy >= vencimiento:
-            texto += f"{n} - debía pagar el {vencimiento}\n"
-
-    if texto == "Deudores:\n\n":
-        texto = "Todos al día"
-
-    await update.message.reply_text(texto)
-
-# ==================================================
-# BOTONES
-# ==================================================
-
-async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    texto = update.message.text
-    user_id = update.effective_user.id
-
-    if not es_admin(update):
-        return
-
-    if texto == "👥 Miembros":
-        await update.message.reply_text("Menú miembros",reply_markup=menu_miembros)
-
-    elif texto == "💰 Pagos":
-        await update.message.reply_text("Menú pagos",reply_markup=menu_pagos)
-
-    elif texto == "📊 Reportes":
-        await update.message.reply_text("Menú reportes",reply_markup=menu_reportes)
-
-    elif texto == "⬅️ Volver":
-        await update.message.reply_text("Menú principal",reply_markup=menu_principal)
-
-    elif texto == "📋 Lista miembros":
-        await lista(update)
-
-    elif texto == "⚠️ Deudores":
-        await deudores(update)
-
-    elif texto == "📊 Excel":
-        generar_excel()
-        await update.message.reply_document(open(EXCEL_FILE,"rb"))
-
-    elif texto == "➕ Agregar miembro":
-
-        user_state[user_id] = "agregar"
-
-        await update.message.reply_text(
-            "Escribe:\nNombre YYYY-MM-DD\nEjemplo:\nCarlos 2026-03-20"
-        )
-
-    elif texto == "👥 Agregar varios":
-
-        user_state[user_id] = "varios"
-
-        await update.message.reply_text(
-            "Escribe uno por línea:\nCarlos 2026-03-20"
-        )
-
-    elif texto == "🔍 Buscar miembro":
-
-        user_state[user_id] = "buscar"
-
-        await update.message.reply_text("Escribe el nombre")
-
-    elif texto == "🗑 Eliminar miembro":
-
-        user_state[user_id] = "eliminar"
-
-        await update.message.reply_text("Nombre a eliminar")
-
-    elif texto == "🗑 Eliminar varios":
-
-        user_state[user_id] = "eliminar_varios"
-
-        await update.message.reply_text("Escribe los nombres uno por línea")
-
-    elif texto == "💰 Registrar pago":
-
-        user_state[user_id] = "pago"
-
-        await update.message.reply_text("Nombre del miembro")
-
-    elif user_id in user_state:
-
-        estado = user_state[user_id]
-        data = cargar_datos()
-
-        if estado == "agregar":
-
-            nombre,fecha = texto.split()
-
-            if not fecha_valida(fecha):
-                await update.message.reply_text("Fecha inválida")
-                return
-
-            data[nombre] = fecha
-            guardar_datos(data)
-
-            await update.message.reply_text("Miembro agregado")
-            del user_state[user_id]
-
-        elif estado == "varios":
-
-            for l in texto.split("\n"):
-                try:
-                    nombre,fecha = l.split()
-                    data[nombre] = fecha
-                except:
-                    pass
-
-            guardar_datos(data)
-
-            await update.message.reply_text("Miembros agregados")
-            del user_state[user_id]
-
-        elif estado == "buscar":
-
-            if texto in data:
-
-                fecha_pago = datetime.strptime(data[texto], "%Y-%m-%d").date()
-                vencimiento = fecha_pago + relativedelta(months=1)
-
-                await update.message.reply_text(
-                    f"👤 {texto}\n"
-                    f"💰 Último pago: {fecha_pago}\n"
-                    f"📅 Vence: {vencimiento}"
-                )
-
-            else:
-                await update.message.reply_text("No encontrado")
-
-            del user_state[user_id]
-
-        elif estado == "eliminar":
-
-            if texto in data:
-                del data[texto]
-                guardar_datos(data)
-                await update.message.reply_text("Eliminado")
-            else:
-                await update.message.reply_text("No existe")
-
-            del user_state[user_id]
-
-        elif estado == "eliminar_varios":
-
-            eliminados = []
-            no_encontrados = []
-
-            for nombre in texto.split("\n"):
-
-                nombre = nombre.strip()
-
-                if nombre in data:
-                    del data[nombre]
-                    eliminados.append(nombre)
-                else:
-                    no_encontrados.append(nombre)
-
-            guardar_datos(data)
-
-            mensaje = "Eliminados:\n"
-            for e in eliminados:
-                mensaje += f"- {e}\n"
-
-            if no_encontrados:
-                mensaje += "\nNo encontrados:\n"
-                for n in no_encontrados:
-                    mensaje += f"- {n}\n"
-
-            await update.message.reply_text(mensaje)
-
-            del user_state[user_id]
-
-        elif estado == "pago":
-
-            if texto not in data:
-                await update.message.reply_text("No existe")
-                return
-
-            data[texto] = datetime.now().date().strftime("%Y-%m-%d")
-
-            guardar_datos(data)
-
-            await update.message.reply_text("Pago registrado")
-
-            del user_state[user_id]
-
-# ==================================================
-# MAIN
-# ==================================================
-
-def main():
-
+    
+    from handlers import export
+    try:
+        await export.exportar_excel_miembros(update, context)
+        await update.message.reply_text("Backup completado")
+    except Exception as e:
+        logger.error(f"Error en backup: {e}")
+        await update.message.reply_text("Error al crear backup")
+
+
+def main() -> None:
+    logger.info("Iniciando bot...")
+    
+    setup_database()
+    
     app = Application.builder().token(TOKEN).build()
-
+    
     job_queue = app.job_queue
-
     job_queue.run_daily(
-         backup_automatico,
-         time=time(hour=22, minute=0)
+        notificacion_5am,
+        time=time(hour=5, minute=0)
     )
-
-    app.add_handler(CommandHandler("start",start))
-    app.add_handler(CommandHandler("backup",backup))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,botones))
-
-    print("Bot iniciado")
-
+    
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("backup", backup_command))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, botones))
+    
+    logger.info("Bot iniciado")
+    print("Bot iniciado - presiona Ctrl+C para detener")
+    
     app.run_polling()
 
+
 if __name__ == "__main__":
+    os.makedirs("logs", exist_ok=True)
+    os.makedirs("reports", exist_ok=True)
+    os.makedirs("backup", exist_ok=True)
     main()

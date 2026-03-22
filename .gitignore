@@ -12,18 +12,12 @@ venv/
 env/
 .venv/
 
-# Logs
+# Logs (generated at runtime)
 *.log
-logs/
 
-# Data (do not upload)
-data/
-backup/
+# Reports (generated at runtime)
 reports/
 
 # OS files
 .DS_Store
 Thumbs.db
-
-# IDE
-.vscode/
