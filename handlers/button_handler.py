@@ -32,7 +32,7 @@ def is_within_schedule() -> bool:
 async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_within_schedule():
         await update.message.reply_text(
-            "🌙 El bot esta Disponible de 5:00 AM a 9:00 PM\n\n"
+            "🌙 El bot esta Disponible de 5:00 AM a 9:30 PM\n\n"
             "Vuelve a escribir en ese horario."
         )
         return
