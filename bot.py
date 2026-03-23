@@ -71,7 +71,33 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("Error al crear backup")
 
 
+def should_run_bot() -> bool:
+    """Check if bot should run based on Colombia time (5 AM - 9:30 PM)"""
+    from datetime import datetime, time, timedelta
+    utc_now = datetime.utcnow()
+    colombia_offset = timedelta(hours=-5)
+    colombia_time = utc_now + colombia_offset
+    
+    now = colombia_time.time()
+    start_time = time(5, 0)     # 5:00 AM Colombia
+    end_time = time(21, 30)     # 9:30 PM Colombia
+    return start_time <= now <= end_time
+
+
+def stop_bot(context: ContextTypes.DEFAULT_TYPE = None):
+    """Stop the bot at scheduled time"""
+    import sys
+    logger.info("Bot deteniendo por horario (9:30 PM Colombia)")
+    print("Bot se detiene - fuera de horario", flush=True)
+    sys.exit(0)
+
+
 def main() -> None:
+    if not should_run_bot():
+        logger.info("Fuera de horario - bot no iniciara")
+        print("Fuera de horario - bot no iniciara", flush=True)
+        return
+    
     logger.info("Iniciando bot...")
     
     setup_database()
@@ -79,9 +105,17 @@ def main() -> None:
     app = Application.builder().token(TOKEN).build()
     
     job_queue = app.job_queue
+    
+    # Notificacion 5 AM Colombia = 10:00 UTC
     job_queue.run_daily(
         notificacion_5am,
-        time=time(hour=5, minute=0)
+        time=time(hour=10, minute=0)
+    )
+    
+    # Detener bot a las 9:30 PM Colombia = 2:30 UTC
+    job_queue.run_daily(
+        stop_bot,
+        time=time(hour=2, minute=30)
     )
     
     app.add_handler(CommandHandler("start", start))
