@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from database import get_collection
 from keyboards import (
@@ -18,10 +18,14 @@ from . import members, payments, reports, stats, admins, export
 
 
 def is_within_schedule() -> bool:
-    """Check if current time is within 5 AM - 9 PM"""
-    now = datetime.now().time()
-    start_time = time(5, 0)   # 5:00 AM
-    end_time = time(21, 0)   # 9:00 PM
+    """Check if current time is within 5 AM - 9:30 PM Colombia (UTC-5)"""
+    utc_now = datetime.utcnow()
+    colombia_offset = timedelta(hours=-5)
+    colombia_time = utc_now + colombia_offset
+    
+    now = colombia_time.time()
+    start_time = time(5, 0)    # 5:00 AM Colombia
+    end_time = time(21, 30)    # 9:30 PM Colombia
     return start_time <= now <= end_time
 
 
