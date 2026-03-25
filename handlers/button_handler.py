@@ -1,6 +1,5 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from datetime import datetime, time, timedelta
 
 from database import get_collection
 from keyboards import (
@@ -17,26 +16,7 @@ from keyboards import (
 from . import members, payments, reports, stats, admins, export
 
 
-def is_within_schedule() -> bool:
-    """Check if current time is within 5 AM - 9:30 PM Colombia (UTC-5)"""
-    utc_now = datetime.utcnow()
-    colombia_offset = timedelta(hours=-5)
-    colombia_time = utc_now + colombia_offset
-    
-    now = colombia_time.time()
-    start_time = time(5, 0)    # 5:00 AM Colombia
-    end_time = time(21, 30)    # 9:30 PM Colombia
-    return start_time <= now <= end_time
-
-
 async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not is_within_schedule():
-        await update.message.reply_text(
-            "🌙 El bot esta Disponible de 5:00 AM a 9:30 PM\n\n"
-            "Vuelve a escribir en ese horario."
-        )
-        return
-    
     texto = update.message.text
     user_id = update.effective_user.id
     
