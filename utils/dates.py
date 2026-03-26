@@ -11,12 +11,12 @@ from config import GRACE_DAYS, LATE_DAYS
 
 def calcular_proximo_vencimiento(fecha_pago: date) -> date:
     dia_pago = fecha_pago.day
-    proximo_mes = fecha_pago + relativedelta(months=1)
+    proximo = fecha_pago + relativedelta(months=1)
     
-    ultimo_dia_mes = calendar.monthrange(proximo_mes.year, proximo_mes.month)[1]
-    dia_real = min(dia_pago, ultimo_dia_mes)
+    ultimo_dia = calendar.monthrange(proximo.year, proximo.month)[1]
+    dia_real = min(dia_pago, ultimo_dia)
     
-    return proximo_mes.replace(day=dia_real)
+    return proximo.replace(day=dia_real)
 
 
 def calcular_dias_vencido(fecha_vencimiento: date) -> int:

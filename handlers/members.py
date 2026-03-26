@@ -1,6 +1,8 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
+import calendar
 from bson import ObjectId
 import logging
 
@@ -135,7 +137,11 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             result = members.insert_one(member.to_dict())
             member_id = result.inserted_id
             
-            vencimiento = calcular_proximo_vencimiento(fecha)
+            vencimiento = fecha + relativedelta(months=1)
+            ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
+            dia_real = min(fecha.day, ultimo_dia)
+            vencimiento = vencimiento.replace(day=dia_real)
+            
             payment_data = {
                 "member_id": str(member_id),
                 "member_name": nombre,
@@ -188,7 +194,11 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 result = members.insert_one(member.to_dict())
                 member_id = result.inserted_id
                 
-                vencimiento = calcular_proximo_vencimiento(fecha)
+                vencimiento = fecha + relativedelta(months=1)
+                ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
+                dia_real = min(fecha.day, ultimo_dia)
+                vencimiento = vencimiento.replace(day=dia_real)
+                
                 payment_data = {
                     "member_id": str(member_id),
                     "member_name": nombre,

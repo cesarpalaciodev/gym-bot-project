@@ -40,8 +40,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 🏋️ COMANDOS DISPONIBLES
 
 👥 MIEMBROS
-➕ Agregar miembro - Registrar nuevo miembro
-👥 Agregar varios - Registro masivo
+➕ Agregar miembro - Nombre Telefono YYYY-MM-DD
+👥 Agregar varios - Registro masivo (uno por linea)
 🔍 Buscar miembro - Buscar por nombre
 📋 Lista miembros - Ver todos
 🗑 Eliminar miembro - Eliminar uno
@@ -56,13 +56,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 📊 Excel - Generar reporte
 
 📈 ESTADISTICAS
-👥 Miembros activos
-💰 Ingresos del mes
-📅 Vencimientos
+👥 Miembros activos - Ver estadisticas
+💰 Ingresos del mes - Ver ingresos
+📅 Vencimientos - Ver vencimientos
 
 💾 EXPORTAR
-📊 Excel miembros
-📊 Excel pagos
-📄 PDF resumen
+📊 Excel miembros - Exportar a Excel
+
+📌 NOTA: El dia de pago es el mismo dia de registro.
+Si te registras el 03, pagas el 03 de cada mes.
 """
     await update.message.reply_text(ayuda)
