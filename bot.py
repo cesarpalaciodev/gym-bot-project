@@ -22,6 +22,7 @@ from database import init_collections
 from handlers import (
     start,
     help_command,
+    getgroupid,
     botones,
     notificacion_5am,
 )
@@ -91,6 +92,7 @@ def main() -> None:
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("getgroupid", getgroupid))
     app.add_handler(CommandHandler("backup", backup_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, botones))
     

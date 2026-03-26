@@ -1,4 +1,4 @@
-from .start import start, help_command
+from .start import start, help_command, getgroupid
 from .members import (
     menu_members,
     agregar_miembro_start,
@@ -41,6 +41,7 @@ from .button_handler import botones
 __all__ = [
     "start",
     "help_command",
+    "getgroupid",
     "menu_members",
     "agregar_miembro_start",
     "agregar_varios_start",
