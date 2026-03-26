@@ -143,11 +143,6 @@ async def procesar_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 del admin_state[user_id]
                 return
             
-            if telegram_id == ADMIN_ID:
-                await update.message.reply_text("No puedes eliminarte a ti mismo")
-                del admin_state[user_id]
-                return
-            
             result = admins_col.delete_one({"telegram_id": telegram_id})
             
             if result.deleted_count > 0:
@@ -169,11 +164,6 @@ async def procesar_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             
             if not target_admin:
                 await update.message.reply_text("Admin no encontrado")
-                del admin_state[user_id]
-                return
-            
-            if telegram_id == ADMIN_ID:
-                await update.message.reply_text("No puedes cambiar tu propio rol")
                 del admin_state[user_id]
                 return
             

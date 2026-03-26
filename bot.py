@@ -17,7 +17,7 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from config import TOKEN, ADMIN_ID
+from config import TOKEN
 from database import init_collections
 from handlers import (
     start,

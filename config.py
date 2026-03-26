@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 GROUP_ID = os.getenv("GROUP_ID", "")
 MONGO_URI = os.getenv("MONGO_URI", "")
 
