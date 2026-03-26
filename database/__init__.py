@@ -36,7 +36,6 @@ def close_database() -> None:
 def init_collections() -> None:
     db = get_database()
     db.members.create_index("name")
-    db.admins.create_index("telegram_id", unique=True)
     db.payments.create_index("member_id")
     db.payments.create_index("payment_date")
     logger.info("Colecciones inicializadas")
