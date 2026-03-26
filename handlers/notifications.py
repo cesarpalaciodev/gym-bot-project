@@ -4,7 +4,7 @@ from datetime import datetime, date
 import logging
 
 from database import get_collection
-from config import GROUP_ID
+from config import GROUP_ID, GRACE_DAYS
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,7 @@ async def notificacion_5am(context: ContextTypes.DEFAULT_TYPE) -> None:
     
     activos = []
     hoy_vencen = []
+    gracia = []
     vencidos = []
     
     for member in all_members:
@@ -39,14 +40,19 @@ async def notificacion_5am(context: ContextTypes.DEFAULT_TYPE) -> None:
             continue
         
         vencimiento = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
-        dias_vencido = (hoy - vencimiento).days
         
-        if vencimiento == hoy:
-            hoy_vencen.append(member["name"])
-        elif vencimiento < hoy:
-            vencidos.append((member["name"], dias_vencido))
-        else:
+        dia_pago = vencimiento.day
+        
+        if hoy.day < dia_pago:
             activos.append(member["name"])
+        elif hoy.day == dia_pago:
+            hoy_vencen.append(member["name"])
+        else:
+            dias_vencido = (hoy - vencimiento).days
+            if dias_vencido <= GRACE_DAYS:
+                gracia.append((member["name"], dias_vencido))
+            else:
+                vencidos.append((member["name"], dias_vencido))
     
     texto += f"✅ ACTIVOS: {len(activos)}\n\n"
     
@@ -56,14 +62,19 @@ async def notificacion_5am(context: ContextTypes.DEFAULT_TYPE) -> None:
             texto += f"  • {name}\n"
         texto += "\n"
     
+    if gracia:
+        texto += f"⚠️ EN GRACIA ({len(gracia)}):\n"
+        for name, dias in gracia:
+            texto += f"  • {name} ({dias} dias)\n"
+        texto += "\n"
+    
     if vencidos:
         texto += f"💀 VENCIDOS ({len(vencidos)}):\n"
         for name, dias in vencidos:
-            grace_text = " (gracia)" if dias <= 4 else ""
-            texto += f"  • {name} ({dias} dias){grace_text}\n"
+            texto += f"  • {name} ({dias} dias)\n"
         texto += "\n"
     
-    if not activos and not hoy_vencen and not vencidos:
+    if not activos and not hoy_vencen and not gracia and not vencidos:
         texto = "✅ No hay miembros registrados\n"
     
     try:

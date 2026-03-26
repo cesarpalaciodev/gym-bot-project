@@ -10,17 +10,29 @@ from config import GRACE_DAYS, LATE_DAYS
 
 
 def calcular_proximo_vencimiento(fecha_pago: date) -> date:
-    return fecha_pago + relativedelta(months=1)
+    dia_pago = fecha_pago.day
+    proximo_mes = fecha_pago + relativedelta(months=1)
+    
+    ultimo_dia_mes = calendar.monthrange(proximo_mes.year, proximo_mes.month)[1]
+    dia_real = min(dia_pago, ultimo_dia_mes)
+    
+    return proximo_mes.replace(day=dia_real)
 
 
 def calcular_dias_vencido(fecha_vencimiento: date) -> int:
     hoy = date.today()
+    
+    dia_pago = fecha_vencimiento.day
+    
+    if hoy.day < dia_pago:
+        return 0
+    
     return (hoy - fecha_vencimiento).days
 
 
 def es_gracia(fecha_vencimiento: date) -> bool:
     dias = calcular_dias_vencido(fecha_vencimiento)
-    return 0 <= dias <= GRACE_DAYS
+    return 0 < dias <= GRACE_DAYS
 
 
 def es_tardio(fecha_vencimiento: date) -> bool:
@@ -54,4 +66,10 @@ def calcular_vencimiento_con_gracia(fecha_pago: date, dias_vencido: int) -> tupl
     grace_period = dias_vencido <= GRACE_DAYS
     if grace_period:
         return nuevo_vencimiento, True
-    return date.today() + relativedelta(months=1), False
+    
+    dia_pago = date.today().day
+    nuevo = date.today() + relativedelta(months=1)
+    ultimo_dia = calendar.monthrange(nuevo.year, nuevo.month)[1]
+    dia_real = min(dia_pago, ultimo_dia)
+    
+    return nuevo.replace(day=dia_real), False

@@ -6,7 +6,7 @@ import logging
 
 from database import get_collection
 from keyboards import menu_reportes
-from utils import format_fecha, calcular_proximo_vencimiento
+from config import GRACE_DAYS
 
 logger = logging.getLogger(__name__)
 
@@ -41,17 +41,24 @@ async def deudores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         
         vencimiento = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
         
-        if hoy > vencimiento:
+        dia_pago = vencimiento.day
+        
+        if hoy.day < dia_pago:
+            continue
+        elif hoy.day == dia_pago:
+            texto += f"• {member['name']}\n"
+            texto += f"  ⏰ Vence hoy: {last_payment['due_date']}\n\n"
+            deudores_count += 1
+        else:
             dias_vencido = (hoy - vencimiento).days
-            if dias_vencido > 0:
-                grace_text = ""
-                if dias_vencido <= 4:
-                    grace_text = " (Periodo de gracia)"
-                
-                texto += f"• {member['name']}\n"
-                texto += f"  💀 Vencio: {last_payment['due_date']}\n"
-                texto += f"  📅 Dias vencido: {dias_vencido}{grace_text}\n\n"
-                deudores_count += 1
+            grace_text = ""
+            if dias_vencido <= GRACE_DAYS:
+                grace_text = " (Periodo de gracia)"
+            
+            texto += f"• {member['name']}\n"
+            texto += f"  💀 Vencio: {last_payment['due_date']}\n"
+            texto += f"  📅 Dias vencido: {dias_vencido}{grace_text}\n\n"
+            deudores_count += 1
     
     if deudores_count == 0:
         texto = "✅ Todos los miembros estan al dia"
@@ -92,20 +99,26 @@ async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         
         if last_payment:
             vencimiento = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
-            dias_vencido = (hoy - vencimiento).days
+            dia_pago = vencimiento.day
             
-            if dias_vencido <= 0:
+            if hoy.day < dia_pago:
                 estado = "Al dia"
                 dias_display = 0
                 fill = verde
-            elif dias_vencido <= 4:
-                estado = "En gracia"
-                dias_display = dias_vencido
+            elif hoy.day == dia_pago:
+                estado = "Vence hoy"
+                dias_display = 0
                 fill = amarillo
             else:
-                estado = "Vencido"
-                dias_display = dias_vencido
-                fill = rojo
+                dias_vencido = (hoy - vencimiento).days
+                if dias_vencido <= GRACE_DAYS:
+                    estado = "En gracia"
+                    dias_display = dias_vencido
+                    fill = amarillo
+                else:
+                    estado = "Vencido"
+                    dias_display = dias_vencido
+                    fill = rojo
             
             ws.append([
                 member["name"],
