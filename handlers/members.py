@@ -24,7 +24,7 @@ async def agregar_miembro_start(update: Update, context: ContextTypes.DEFAULT_TY
     await update.message.reply_text(
         "Ingresa: Nombre, Telefono, Fecha\n"
         "Ejemplo:\n"
-        "Cesar Palacio Garcia 5512345678 2026-03-20"
+        "Cesar Palacio Garcia 3101234567 2026-03-20"
     )
 
 
@@ -34,8 +34,8 @@ async def agregar_varios_start(update: Update, context: ContextTypes.DEFAULT_TYP
     await update.message.reply_text(
         "Ingresa uno por linea:\n"
         "Nombre Telefono YYYY-MM-DD\n"
-        "Cesar Palacio Garcia 5512345678 2026-03-20\n"
-        "Maria Lopez Hernandez 5518765432 2026-03-21"
+        "Cesar Palacio Garcia 3101234567 2026-03-20\n"
+        "Maria Lopez Hernandez 3158765432 2026-03-21"
     )
 
 
@@ -112,6 +112,13 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 return
             
             nombre, telefono, fecha_str = partes
+            
+            telefono = telefono.strip()
+            if not (telefono.isdigit() and len(telefono) == 10 and telefono.startswith("3")):
+                await update.message.reply_text("Telefono invalido. Debe ser un numero colombiano de 10 digitos (ej: 3101234567)")
+                del user_state[user_id]
+                return
+            
             fecha = parse_fecha(fecha_str)
             
             if not fecha:
@@ -161,6 +168,12 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                     continue
                 
                 nombre, telefono, fecha_str = partes
+                telefono = telefono.strip()
+                
+                if not (telefono.isdigit() and len(telefono) == 10 and telefono.startswith("3")):
+                    errores += 1
+                    continue
+                
                 fecha = parse_fecha(fecha_str)
                 
                 if not fecha:
