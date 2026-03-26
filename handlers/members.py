@@ -22,9 +22,9 @@ async def agregar_miembro_start(update: Update, context: ContextTypes.DEFAULT_TY
     user_id = update.effective_user.id
     user_state[user_id] = "agregar_miembro"
     await update.message.reply_text(
-        "Ingresa nombre completo y fecha:\n"
+        "Ingresa: Nombre, Telefono, Fecha\n"
         "Ejemplo:\n"
-        "Cesar Palacio Garcia 2026-03-20"
+        "Cesar Palacio Garcia 5512345678 2026-03-20"
     )
 
 
@@ -33,8 +33,9 @@ async def agregar_varios_start(update: Update, context: ContextTypes.DEFAULT_TYP
     user_state[user_id] = "agregar_varios"
     await update.message.reply_text(
         "Ingresa uno por linea:\n"
-        "Cesar Palacio Garcia 2026-03-20\n"
-        "Maria Lopez Hernandez 2026-03-21"
+        "Nombre Telefono YYYY-MM-DD\n"
+        "Cesar Palacio Garcia 5512345678 2026-03-20\n"
+        "Maria Lopez Hernandez 5518765432 2026-03-21"
     )
 
 
@@ -77,12 +78,16 @@ async def lista_miembros(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             sort=[("payment_date", -1)]
         )
         if last_payment:
-            texto += f"• {m['name']}\n"
-            texto += f"  Ultimo pago: {last_payment['payment_date']}\n"
+            texto += f"• {m['name']}"
+            if m.get("phone"):
+                texto += f" 📱{m['phone']}"
+            texto += f"\n  Ultimo pago: {last_payment['payment_date']}\n"
             texto += f"  Vence: {last_payment['due_date']}\n\n"
         else:
-            texto += f"• {m['name']}\n"
-            texto += f"  Sin pagos registrados\n\n"
+            texto += f"• {m['name']}"
+            if m.get("phone"):
+                texto += f" 📱{m['phone']}"
+            texto += f"\n  Sin pagos registrados\n\n"
     
     await update.message.reply_text(texto)
 
@@ -100,13 +105,13 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     
     try:
         if estado == "agregar_miembro":
-            partes = texto.rsplit(" ", 1)
-            if len(partes) != 2:
-                await update.message.reply_text("Formato incorrecto. Usa: Nombre Completo YYYY-MM-DD")
+            partes = texto.rsplit(" ", 2)
+            if len(partes) != 3:
+                await update.message.reply_text("Formato incorrecto. Usa: Nombre Telefono YYYY-MM-DD")
                 del user_state[user_id]
                 return
             
-            nombre, fecha_str = partes
+            nombre, telefono, fecha_str = partes
             fecha = parse_fecha(fecha_str)
             
             if not fecha:
@@ -119,7 +124,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 del user_state[user_id]
                 return
             
-            member = Member(name=nombre)
+            member = Member(name=nombre, phone=telefono)
             result = members.insert_one(member.to_dict())
             member_id = result.inserted_id
             
@@ -150,12 +155,12 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 if not linea:
                     continue
                 
-                partes = linea.rsplit(" ", 1)
-                if len(partes) != 2:
+                partes = linea.rsplit(" ", 2)
+                if len(partes) != 3:
                     errores += 1
                     continue
                 
-                nombre, fecha_str = partes
+                nombre, telefono, fecha_str = partes
                 fecha = parse_fecha(fecha_str)
                 
                 if not fecha:
@@ -166,7 +171,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                     errores += 1
                     continue
                 
-                member = Member(name=nombre)
+                member = Member(name=nombre, phone=telefono)
                 result = members.insert_one(member.to_dict())
                 member_id = result.inserted_id
                 
@@ -204,6 +209,8 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 
                 msg = f"👤 {member['name']}\n"
                 msg += f"📅 Registro: {member['created_at'].strftime('%Y-%m-%d')}\n"
+                if member.get("phone"):
+                    msg += f"📱 {member['phone']}\n"
                 
                 if last_payment:
                     msg += f"💰 Ultimo pago: {last_payment['payment_date']}\n"

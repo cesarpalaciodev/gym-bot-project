@@ -19,8 +19,6 @@ from telegram.ext import (
 
 from config import TOKEN, ADMIN_ID
 from database import init_collections
-from models import Admin
-from database import get_collection
 from handlers import (
     start,
     help_command,
@@ -40,26 +38,26 @@ logger = logging.getLogger(__name__)
 def setup_database() -> None:
     try:
         init_collections()
-        admins = get_collection("admins")
-        
-        if not admins.find_one({"telegram_id": ADMIN_ID}):
-            super_admin = Admin(
-                telegram_id=ADMIN_ID,
-                name="Super Admin",
-                role="super_admin"
-            )
-            admins.insert_one(super_admin.to_dict())
-            logger.info("Super Admin creado")
-        else:
-            logger.info("Super Admin ya existe")
     except Exception as e:
         logger.error(f"Error inicializando base de datos: {e}")
         raise
 
 
 async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.effective_user.id != ADMIN_ID:
-        await update.message.reply_text("No autorizado")
+    chat = update.effective_chat
+    user = update.effective_user
+    
+    if chat.type != "private":
+        try:
+            member = await context.bot.get_chat_member(chat.id, user.id)
+            if member.status not in ["creator", "administrator"]:
+                await update.message.reply_text("No autorizado")
+                return
+        except Exception:
+            await update.message.reply_text("No autorizado")
+            return
+    else:
+        await update.message.reply_text("Usa este comando en un grupo")
         return
     
     from handlers import export

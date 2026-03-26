@@ -4,7 +4,7 @@ menu_principal = ReplyKeyboardMarkup(
     [
         ["👥 Miembros", "💰 Pagos"],
         ["📊 Reportes", "📈 Estadísticas"],
-        ["💾 Exportar", "⚙️ Admin"],
+        ["💾 Exportar"],
         ["⬅️ Volver"],
     ],
     resize_keyboard=True,

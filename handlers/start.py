@@ -1,29 +1,33 @@
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
+from telegram.error import TelegramError
 
-from database import get_collection
-from keyboards import menu_principal, menu_principal_admin
+from keyboards import menu_principal
+
+
+async def verificar_admin_grupo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    chat = update.effective_chat
+    user = update.effective_user
+    
+    if chat.type == "private":
+        return True
+    
+    try:
+        member = await context.bot.get_chat_member(chat.id, user.id)
+        return member.status in ["creator", "administrator"]
+    except TelegramError:
+        return False
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = update.effective_user.id
-    admins = get_collection("admins")
-    admin = admins.find_one({"telegram_id": user_id})
-    
-    if not admin:
-        await update.message.reply_text("Acceso no autorizado")
+    if not await verificar_admin_grupo(update, context):
+        await update.message.reply_text("No tienes acceso. Debes ser admin del grupo.")
         return
     
-    if admin["role"] == "super_admin":
-        await update.message.reply_text(
-            "🏋️ Sistema del gimnasio\n\nModo: Super Admin",
-            reply_markup=menu_principal,
-        )
-    else:
-        await update.message.reply_text(
-            "🏋️ Sistema del gimnasio",
-            reply_markup=menu_principal_admin,
-        )
+    await update.message.reply_text(
+        "🏋️ Sistema del gimnasio",
+        reply_markup=menu_principal,
+    )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

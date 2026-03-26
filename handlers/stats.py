@@ -38,10 +38,11 @@ async def miembros_activos(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             continue
         
         vencimiento = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
+        dias_vencido = (hoy - vencimiento).days
         
-        if hoy <= vencimiento:
+        if dias_vencido <= 0:
             activos += 1
-        elif (hoy - vencimiento).days <= 4:
+        elif dias_vencido <= 4:
             gracia += 1
         else:
             vencidos += 1
@@ -49,7 +50,7 @@ async def miembros_activos(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     msg = "📊 ESTADISTICAS DE MIEMBROS\n\n"
     msg += f"👥 Total: {total}\n"
     msg += f"✅ Activos: {activos}\n"
-    msg += f"⚠️ Gracia: {gracia}\n"
+    msg += f"⚠️ En gracia: {gracia}\n"
     msg += f"💀 Vencidos: {vencidos}\n"
     
     if total > 0:

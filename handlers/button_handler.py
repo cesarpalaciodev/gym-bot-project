@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
+from telegram.error import TelegramError
 
-from database import get_collection
 from keyboards import (
     menu_principal,
     menu_miembros,
@@ -9,24 +9,31 @@ from keyboards import (
     menu_reportes,
     menu_estadisticas,
     menu_exportar,
-    menu_admin,
-    menu_principal_admin,
 )
 
-from . import members, payments, reports, stats, admins, export
+from . import members, payments, reports, stats, export
+
+
+async def verificar_admin_grupo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    chat = update.effective_chat
+    user = update.effective_user
+    
+    if chat.type == "private":
+        return True
+    
+    try:
+        member = await context.bot.get_chat_member(chat.id, user.id)
+        return member.status in ["creator", "administrator"]
+    except TelegramError:
+        return False
 
 
 async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     texto = update.message.text
     user_id = update.effective_user.id
     
-    admins_col = get_collection("admins")
-    admin = admins_col.find_one({"telegram_id": user_id})
-    
-    if not admin:
+    if not await verificar_admin_grupo(update, context):
         return
-    
-    is_super_admin = admin["role"] == "super_admin"
     
     if texto == "👥 Miembros":
         await members.menu_members(update, context)
@@ -43,12 +50,6 @@ async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     elif texto == "💾 Exportar":
         await export.menu_exports(update, context)
     
-    elif texto == "⚙️ Admin":
-        if is_super_admin:
-            await admins.menu_admins(update, context)
-        else:
-            await update.message.reply_text("Solo Super Admin")
-    
     elif texto == "👥 Miembros activos":
         await stats.miembros_activos(update, context)
     
@@ -59,10 +60,7 @@ async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await stats.vencimientos_stats(update, context)
     
     elif texto == "⬅️ Volver":
-        if is_super_admin:
-            await update.message.reply_text("🏋️ Menu principal", reply_markup=menu_principal)
-        else:
-            await update.message.reply_text("🏋️ Menu principal", reply_markup=menu_principal_admin)
+        await update.message.reply_text("🏋️ Menu principal", reply_markup=menu_principal)
     
     elif texto == "➕ Agregar miembro":
         await members.agregar_miembro_start(update, context)
@@ -103,19 +101,6 @@ async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     elif texto == "📄 PDF resumen":
         await export.exportar_pdf_resumen(update, context)
     
-    elif texto == "➕ Agregar admin":
-        await admins.agregar_admin_start(update, context)
-    
-    elif texto == "👥 Lista admins":
-        await admins.lista_admins(update, context)
-    
-    elif texto == "🗑 Quitar admin":
-        await admins.quitar_admin_start(update, context)
-    
-    elif texto == "🔄 Cambiar rol":
-        await admins.cambiar_rol_start(update, context)
-    
     else:
         await members.procesar_miembro(update, context)
         await payments.procesar_pago(update, context)
-        await admins.procesar_admin(update, context)

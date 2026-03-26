@@ -43,14 +43,18 @@ async def deudores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         
         if hoy > vencimiento:
             dias_vencido = (hoy - vencimiento).days
-            if dias_vencido > 4:
+            if dias_vencido > 0:
+                grace_text = ""
+                if dias_vencido <= 4:
+                    grace_text = " (Periodo de gracia)"
+                
                 texto += f"• {member['name']}\n"
                 texto += f"  💀 Vencio: {last_payment['due_date']}\n"
-                texto += f"  📅 Dias vencido: {dias_vencido}\n\n"
+                texto += f"  📅 Dias vencido: {dias_vencido}{grace_text}\n\n"
                 deudores_count += 1
     
     if deudores_count == 0:
-        texto = "✅ No hay miembros con pagos vencidos"
+        texto = "✅ Todos los miembros estan al dia"
     
     await update.message.reply_text(texto)
 
@@ -70,7 +74,7 @@ async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     ws = wb.active
     ws.title = "Miembros"
     
-    ws.append(["Nombre", "Fecha Registro", "Ultimo Pago", "Vence", "Plan", "Estado"])
+    ws.append(["Nombre", "Fecha Registro", "Ultimo Pago", "Vence", "Plan", "Dias Vencido", "Estado"])
     
     verde = PatternFill(start_color="90EE90", fill_type="solid")
     rojo = PatternFill(start_color="FF7F7F", fill_type="solid")
@@ -90,11 +94,17 @@ async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             vencimiento = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
             dias_vencido = (hoy - vencimiento).days
             
-            if dias_vencido <= 4:
+            if dias_vencido <= 0:
                 estado = "Al dia"
+                dias_display = 0
                 fill = verde
+            elif dias_vencido <= 4:
+                estado = "En gracia"
+                dias_display = dias_vencido
+                fill = amarillo
             else:
                 estado = "Vencido"
+                dias_display = dias_vencido
                 fill = rojo
             
             ws.append([
@@ -103,11 +113,12 @@ async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 last_payment["payment_date"],
                 last_payment["due_date"],
                 last_payment["plan"],
+                dias_display,
                 estado,
             ])
             
             fila = ws.max_row
-            ws[f"F{fila}"].fill = fill
+            ws[f"G{fila}"].fill = fill
     
     wb.save(EXCEL_FILE)
     
