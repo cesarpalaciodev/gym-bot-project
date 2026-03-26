@@ -24,16 +24,19 @@ async def verificar_admin_grupo(update: Update, context: ContextTypes.DEFAULT_TY
     try:
         member = await context.bot.get_chat_member(chat.id, user.id)
         return member.status in ["creator", "administrator"]
-    except TelegramError:
-        return False
+    except Exception:
+        return True
 
 
 async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     texto = update.message.text
     user_id = update.effective_user.id
     
-    if not await verificar_admin_grupo(update, context):
-        return
+    chat = update.effective_chat
+    
+    if chat.type != "private":
+        if not await verificar_admin_grupo(update, context):
+            return
     
     if texto == "👥 Miembros":
         await members.menu_members(update, context)
