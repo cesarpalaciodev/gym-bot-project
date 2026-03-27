@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from datetime import datetime
+from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import calendar
 from bson import ObjectId
@@ -8,7 +8,7 @@ import logging
 
 from database import get_collection
 from keyboards import menu_miembros, menu_principal
-from utils import format_fecha, parse_fecha, calcular_proximo_vencimiento
+from utils import format_fecha, parse_fecha
 from models import Member
 
 logger = logging.getLogger(__name__)
