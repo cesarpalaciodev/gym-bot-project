@@ -2,11 +2,13 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
+import calendar
 import logging
 
 from database import get_collection
 from keyboards import menu_reportes
 from config import GRACE_DAYS
+from utils import format_fecha
 
 logger = logging.getLogger(__name__)
 
@@ -39,26 +41,30 @@ async def deudores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not last_payment:
             continue
         
-        vencimiento = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
-        
-        dia_pago = vencimiento.day
+        payment_date = datetime.strptime(last_payment["payment_date"], "%Y-%m-%d").date()
+        dia_pago = payment_date.day
         
         if hoy.day < dia_pago:
             continue
-        elif hoy.day == dia_pago:
-            texto += f"• {member['name']}\n"
-            texto += f"  ⏰ Vence hoy: {last_payment['due_date']}\n\n"
-            deudores_count += 1
-        else:
-            dias_vencido = (hoy - vencimiento).days
-            grace_text = ""
-            if dias_vencido <= GRACE_DAYS:
-                grace_text = " (Periodo de gracia)"
+        
+        if hoy.day == dia_pago:
+            next_due = hoy + relativedelta(months=1)
+            ultimo_dia = calendar.monthrange(next_due.year, next_due.month)[1]
+            dia_real = min(dia_pago, ultimo_dia)
+            next_due = next_due.replace(day=dia_real)
             
             texto += f"• {member['name']}\n"
-            texto += f"  💀 Vencio: {last_payment['due_date']}\n"
-            texto += f"  📅 Dias vencido: {dias_vencido}{grace_text}\n\n"
+            texto += f"  ⏰ Vence hoy: {format_fecha(next_due)}\n\n"
             deudores_count += 1
+        else:
+            meses_vencidos = (hoy.year - payment_date.year) * 12 + (hoy.month - payment_date.month)
+            
+            if meses_vencidos > 1:
+                grace_text = f" ({meses_vencidos-1} meses)" if meses_vencidos <= 4 else ""
+                texto += f"• {member['name']}\n"
+                texto += f"  💀 ultimo pago: {last_payment['payment_date']}\n"
+                texto += f"  📅 Meses vencido: {meses_vencidos-1}{grace_text}\n\n"
+                deudores_count += 1
     
     if deudores_count == 0:
         texto = "✅ Todos los miembros estan al dia"
