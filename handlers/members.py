@@ -138,10 +138,17 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             member_id = result.inserted_id
             
             hoy = date.today()
-            vencimiento = hoy + relativedelta(months=1)
-            ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
-            dia_real = min(fecha.day, ultimo_dia)
-            vencimiento = vencimiento.replace(day=dia_real)
+            dia_pago = fecha.day
+            
+            if hoy.day < dia_pago:
+                vencimiento = hoy.replace(day=dia_pago)
+                if vencimiento < hoy:
+                    vencimiento = vencimiento + relativedelta(months=1)
+            else:
+                vencimiento = hoy + relativedelta(months=1)
+                ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
+                dia_real = min(dia_pago, ultimo_dia)
+                vencimiento = vencimiento.replace(day=dia_real)
             
             payment_data = {
                 "member_id": str(member_id),
@@ -196,10 +203,17 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 member_id = result.inserted_id
                 
                 hoy = date.today()
-                vencimiento = hoy + relativedelta(months=1)
-                ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
-                dia_real = min(fecha.day, ultimo_dia)
-                vencimiento = vencimiento.replace(day=dia_real)
+                dia_pago = fecha.day
+                
+                if hoy.day < dia_pago:
+                    vencimiento = hoy.replace(day=dia_pago)
+                    if vencimiento < hoy:
+                        vencimiento = vencimiento + relativedelta(months=1)
+                else:
+                    vencimiento = hoy + relativedelta(months=1)
+                    ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
+                    dia_real = min(dia_pago, ultimo_dia)
+                    vencimiento = vencimiento.replace(day=dia_real)
                 
                 payment_data = {
                     "member_id": str(member_id),
