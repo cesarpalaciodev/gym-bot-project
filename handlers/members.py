@@ -137,7 +137,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             result = members.insert_one(member.to_dict())
             member_id = result.inserted_id
             
-            vencimiento = fecha + relativedelta(months=1)
+            vencimiento = fecha + relativedelta(months=2)
             ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
             dia_real = min(fecha.day, ultimo_dia)
             vencimiento = vencimiento.replace(day=dia_real)
@@ -194,7 +194,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 result = members.insert_one(member.to_dict())
                 member_id = result.inserted_id
                 
-                vencimiento = fecha + relativedelta(months=1)
+                vencimiento = fecha + relativedelta(months=2)
                 ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
                 dia_real = min(fecha.day, ultimo_dia)
                 vencimiento = vencimiento.replace(day=dia_real)
