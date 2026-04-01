@@ -137,15 +137,20 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             result = members.insert_one(member.to_dict())
             member_id = result.inserted_id
             
-            hoy = date.today()
             dia_pago = fecha.day
             
-            if hoy.day < dia_pago:
-                vencimiento = hoy.replace(day=dia_pago)
-                if vencimiento < hoy:
-                    vencimiento = vencimiento + relativedelta(months=1)
+            if fecha.year == hoy.year and fecha.month == hoy.month:
+                if hoy.day < dia_pago:
+                    vencimiento = hoy.replace(day=dia_pago)
+                    if vencimiento < hoy:
+                        vencimiento = vencimiento + relativedelta(months=1)
+                else:
+                    vencimiento = hoy + relativedelta(months=1)
+                    ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
+                    dia_real = min(dia_pago, ultimo_dia)
+                    vencimiento = vencimiento.replace(day=dia_real)
             else:
-                vencimiento = hoy + relativedelta(months=1)
+                vencimiento = fecha + relativedelta(months=1)
                 ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
                 dia_real = min(dia_pago, ultimo_dia)
                 vencimiento = vencimiento.replace(day=dia_real)
@@ -153,7 +158,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             payment_data = {
                 "member_id": str(member_id),
                 "member_name": nombre,
-                "payment_date": format_fecha(hoy),
+                "payment_date": fecha_str,
                 "amount": 0,
                 "plan": "inicial",
                 "due_date": format_fecha(vencimiento),
@@ -205,12 +210,18 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 hoy = date.today()
                 dia_pago = fecha.day
                 
-                if hoy.day < dia_pago:
-                    vencimiento = hoy.replace(day=dia_pago)
-                    if vencimiento < hoy:
-                        vencimiento = vencimiento + relativedelta(months=1)
+                if fecha.year == hoy.year and fecha.month == hoy.month:
+                    if hoy.day < dia_pago:
+                        vencimiento = hoy.replace(day=dia_pago)
+                        if vencimiento < hoy:
+                            vencimiento = vencimiento + relativedelta(months=1)
+                    else:
+                        vencimiento = hoy + relativedelta(months=1)
+                        ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
+                        dia_real = min(dia_pago, ultimo_dia)
+                        vencimiento = vencimiento.replace(day=dia_real)
                 else:
-                    vencimiento = hoy + relativedelta(months=1)
+                    vencimiento = fecha + relativedelta(months=1)
                     ultimo_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
                     dia_real = min(dia_pago, ultimo_dia)
                     vencimiento = vencimiento.replace(day=dia_real)
@@ -218,7 +229,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 payment_data = {
                     "member_id": str(member_id),
                     "member_name": nombre,
-                    "payment_date": format_fecha(hoy),
+                    "payment_date": fecha_str,
                     "amount": 0,
                     "plan": "inicial",
                     "due_date": format_fecha(vencimiento),
