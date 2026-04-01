@@ -133,6 +133,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 del user_state[user_id]
                 return
             
+            hoy = date.today()
             member = Member(name=nombre, phone=telefono)
             result = members.insert_one(member.to_dict())
             member_id = result.inserted_id
