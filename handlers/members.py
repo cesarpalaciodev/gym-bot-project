@@ -140,15 +140,10 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             
             dia_pago = fecha.day
             
-            if fecha.year < hoy.year or (fecha.year == hoy.year and fecha.month < hoy.month):
-                vencimiento = hoy + relativedelta(months=1)
-                max_dia_mes = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
-                if dia_pago > max_dia_mes:
-                    vencimiento = vencimiento.replace(day=max_dia_mes)
-                else:
-                    vencimiento = vencimiento.replace(day=dia_pago)
+            if hoy.day < dia_pago:
+                vencimiento = hoy.replace(day=dia_pago)
             else:
-                vencimiento = fecha + relativedelta(months=2)
+                vencimiento = hoy + relativedelta(months=1)
                 max_dia_mes = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
                 if dia_pago > max_dia_mes:
                     vencimiento = vencimiento.replace(day=max_dia_mes)
@@ -209,15 +204,10 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 
                 dia_pago = fecha.day
                 
-                if fecha.year < hoy.year or (fecha.year == hoy.year and fecha.month < hoy.month):
-                    vencimiento = hoy + relativedelta(months=1)
-                    max_dia_mes = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
-                    if dia_pago > max_dia_mes:
-                        vencimiento = vencimiento.replace(day=max_dia_mes)
-                    else:
-                        vencimiento = vencimiento.replace(day=dia_pago)
+                if hoy.day < dia_pago:
+                    vencimiento = hoy.replace(day=dia_pago)
                 else:
-                    vencimiento = fecha + relativedelta(months=2)
+                    vencimiento = hoy + relativedelta(months=1)
                     max_dia_mes = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
                     if dia_pago > max_dia_mes:
                         vencimiento = vencimiento.replace(day=max_dia_mes)
