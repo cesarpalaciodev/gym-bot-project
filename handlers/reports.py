@@ -41,8 +41,8 @@ async def deudores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not last_payment:
             continue
         
-        payment_date = datetime.strptime(last_payment["payment_date"], "%Y-%m-%d").date()
-        dia_pago = payment_date.day
+        due_date = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
+        dia_pago = due_date.day
         
         if hoy.day < dia_pago:
             continue
@@ -57,13 +57,13 @@ async def deudores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             texto += f"  ⏰ Vence hoy: {format_fecha(next_due)}\n\n"
             deudores_count += 1
         else:
-            meses_vencidos = (hoy.year - payment_date.year) * 12 + (hoy.month - payment_date.month)
+            meses_vencidos = (hoy.year - due_date.year) * 12 + (hoy.month - due_date.month)
             
-            if meses_vencidos > 1:
-                grace_text = f" ({meses_vencidos-1} meses)" if meses_vencidos <= 4 else ""
+            if meses_vencidos > 0:
+                grace_text = f" ({meses_vencidos} meses)" if meses_vencidos <= 3 else ""
                 texto += f"• {member['name']}\n"
-                texto += f"  💀 ultimo pago: {last_payment['payment_date']}\n"
-                texto += f"  📅 Meses vencido: {meses_vencidos-1}{grace_text}\n\n"
+                texto += f"  💀 Vencio: {last_payment['due_date']}\n"
+                texto += f"  📅 Meses vencido: {meses_vencidos}{grace_text}\n\n"
                 deudores_count += 1
     
     if deudores_count == 0:
