@@ -83,7 +83,7 @@ async def lista_miembros(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             texto += f"• {m['name']}"
             if m.get("phone"):
                 texto += f" 📱{m['phone']}"
-            texto += f"\n  Ultimo pago: {last_payment['payment_date']}\n"
+            texto += f"\n  Ingreso: {last_payment['payment_date']}\n"
             texto += f"  Vence: {last_payment['due_date']}\n\n"
         else:
             texto += f"• {m['name']}"
@@ -248,11 +248,11 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 )
                 
                 msg = f"👤 {member['name']}\n"
-                msg += f"📅 Registro: {member['created_at'].strftime('%Y-%m-%d')}\n"
                 if member.get("phone"):
                     msg += f"📱 {member['phone']}\n"
                 
                 if last_payment:
+                    msg += f"📅 Fecha ingreso: {last_payment['payment_date']}\n"
                     msg += f"💰 Ultimo pago: {last_payment['payment_date']}\n"
                     msg += f"📅 Vence: {last_payment['due_date']}\n"
                     msg += f"📋 Plan: {last_payment['plan']}"
