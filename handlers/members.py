@@ -139,7 +139,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             member_id = result.inserted_id
             
             dia_pago = fecha.day
-            vencimiento = fecha + relativedelta(months=1)
+            vencimiento = fecha + relativedelta(months=2)
             
             max_dia_mes = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
             if dia_pago > max_dia_mes:
@@ -200,7 +200,7 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 member_id = result.inserted_id
                 
                 dia_pago = fecha.day
-                vencimiento = fecha + relativedelta(months=1)
+                vencimiento = fecha + relativedelta(months=2)
                 
                 max_dia_mes = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
                 if dia_pago > max_dia_mes:
