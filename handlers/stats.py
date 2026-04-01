@@ -6,7 +6,6 @@ import logging
 
 from database import get_collection
 from keyboards import menu_estadisticas
-from config import GRACE_DAYS
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +46,8 @@ async def miembros_activos(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         elif hoy.day == dia_pago:
             activos += 1
         else:
-            dias_vencido = (hoy - vencimiento).days
-            if dias_vencido <= GRACE_DAYS:
+            dias_vencido = hoy.day - dia_pago
+            if dias_vencido <= 4:
                 gracia += 1
             else:
                 vencidos += 1

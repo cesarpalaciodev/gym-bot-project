@@ -47,23 +47,24 @@ async def deudores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if hoy.day < dia_pago:
             continue
         
-        if hoy.day == dia_pago:
-            next_due = hoy + relativedelta(months=1)
-            ultimo_dia = calendar.monthrange(next_due.year, next_due.month)[1]
-            dia_real = min(dia_pago, ultimo_dia)
-            next_due = next_due.replace(day=dia_real)
-            
+        dias_vencido = hoy.day - dia_pago
+        
+        if dias_vencido == 0:
             texto += f"• {member['name']}\n"
-            texto += f"  ⏰ Vence hoy: {format_fecha(next_due)}\n\n"
+            texto += f"  ⏰ Vence hoy: {last_payment['due_date']}\n\n"
+            deudores_count += 1
+        elif 1 <= dias_vencido <= 4:
+            texto += f"• {member['name']}\n"
+            texto += f"  ⚠️ En gracia ({dias_vencido} dias)\n"
+            texto += f"  Vencio: {last_payment['due_date']}\n\n"
             deudores_count += 1
         else:
             meses_vencidos = (hoy.year - due_date.year) * 12 + (hoy.month - due_date.month)
-            
-            if meses_vencidos > 0:
-                grace_text = f" ({meses_vencidos} meses)" if meses_vencidos <= 3 else ""
+            if meses_vencidos > 0 or dias_vencido >= 5:
+                grace_text = " (gracia)" if dias_vencido <= 4 else ""
                 texto += f"• {member['name']}\n"
                 texto += f"  💀 Vencio: {last_payment['due_date']}\n"
-                texto += f"  📅 Meses vencido: {meses_vencidos}{grace_text}\n\n"
+                texto += f"  📅 Dias vencido: {dias_vencido}{grace_text}\n\n"
                 deudores_count += 1
     
     if deudores_count == 0:
@@ -116,8 +117,8 @@ async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 dias_display = 0
                 fill = amarillo
             else:
-                dias_vencido = (hoy - vencimiento).days
-                if dias_vencido <= GRACE_DAYS:
+                dias_vencido = hoy.day - dia_pago
+                if dias_vencido <= 4:
                     estado = "En gracia"
                     dias_display = dias_vencido
                     fill = amarillo

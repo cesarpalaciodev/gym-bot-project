@@ -4,7 +4,7 @@ from datetime import datetime, date
 import logging
 
 from database import get_collection
-from config import GROUP_ID, GRACE_DAYS
+from config import GROUP_ID
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +48,8 @@ async def notificacion_5am(context: ContextTypes.DEFAULT_TYPE) -> None:
         elif hoy.day == dia_pago:
             hoy_vencen.append(member["name"])
         else:
-            dias_vencido = (hoy - vencimiento).days
-            if dias_vencido <= GRACE_DAYS:
+            dias_vencido = hoy.day - dia_pago
+            if dias_vencido <= 4:
                 gracia.append((member["name"], dias_vencido))
             else:
                 vencidos.append((member["name"], dias_vencido))

@@ -13,7 +13,7 @@ from utils import (
     calcular_vencimiento_con_gracia,
     es_tardio,
 )
-from config import PLANS, GRACE_DAYS
+from config import PLANS
 
 logger = logging.getLogger(__name__)
 
@@ -129,9 +129,10 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             if state["last_payment"]:
                 ultimo_pago_date = datetime.strptime(state["last_payment"]["payment_date"], "%Y-%m-%d").date()
                 vencimiento_anterior = datetime.strptime(state["last_payment"]["due_date"], "%Y-%m-%d").date()
-                dias_vencido = calcular_dias_vencido(vencimiento_anterior)
+                dia_pago = vencimiento_anterior.day
+                dias_vencido = hoy.day - dia_pago
                 
-                if dias_vencido > GRACE_DAYS:
+                if dias_vencido > 4:
                     nuevo_vencimiento = hoy + relativedelta(months=1)
                     ultimo_dia = calendar.monthrange(nuevo_vencimiento.year, nuevo_vencimiento.month)[1]
                     dia_real = min(hoy.day, ultimo_dia)
@@ -139,7 +140,7 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 else:
                     nuevo_vencimiento = ultimo_pago_date + relativedelta(months=1)
                     ultimo_dia = calendar.monthrange(nuevo_vencimiento.year, nuevo_vencimiento.month)[1]
-                    dia_real = min(ultimo_pago_date.day, ultimo_dia)
+                    dia_real = min(dia_pago, ultimo_dia)
                     nuevo_vencimiento = nuevo_vencimiento.replace(day=dia_real)
                     grace_period = True
             else:
