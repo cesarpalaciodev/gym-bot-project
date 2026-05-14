@@ -1,0 +1,31 @@
+services:
+  bot:
+    build: .
+    container_name: gym-bot
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./reports:/app/reports
+
+  mongo:
+    image: mongo:7
+    container_name: gym-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: gym
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: mongosh --eval "db.adminCommand('ping')"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo_data:

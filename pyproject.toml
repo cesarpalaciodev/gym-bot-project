@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gym-bot"
+version = "2.0.0"
+description = "Telegram bot for gym membership management"
+requires-python = ">=3.11"
+dependencies = [
+    "python-telegram-bot[job-queue]>=21.0",
+    "python-dotenv",
+    "python-dateutil",
+    "openpyxl",
+    "pymongo>=4.6.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v --tb=short --cov=. --cov-report=term-missing --cov-report=html:coverage_html"
+markers = ["integration: marks integration tests that need MongoDB"]
+
+[tool.coverage.run]
+source = ["bot", "config", "database", "handlers", "keyboards", "models", "utils"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "return None",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+disallow_any_unimported = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+exclude = ["tests/", ".venv/"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
+ignore = ["ARG001", "RUF001", "RUF059"]
+per-file-ignores = {"tests/*" = ["B007", "E501"]}
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"

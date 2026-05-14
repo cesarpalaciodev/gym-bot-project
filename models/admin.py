@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass
@@ -9,7 +8,7 @@ class Admin:
     name: str
     role: str = "admin"
     created_at: datetime = field(default_factory=datetime.utcnow)
-    _id: Optional[str] = None
+    _id: str | None = None
 
     def to_dict(self) -> dict:
         data = {

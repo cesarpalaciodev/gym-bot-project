@@ -1,137 +1,170 @@
-# AGENTS.md - Bot de Gimnasio para Telegram
+# AGENTS.md - Gym Management Telegram Bot
 
-## Descripción del Proyecto
+## Description
 
-Bot de Telegram en Python para gestionar miembros de gimnasio, pagos y fechas de vencimiento con MongoDB.
+Telegram bot for gym member & payment management with MongoDB. Python async/await, python-telegram-bot v21+.
 
-## Comandos de Ejecución
+## Commands
 
-### Instalación
 ```bash
+# Install all deps (prod + dev)
 pip install -r requirements.txt
-```
+pip install pytest pytest-cov mypy ruff pre-commit bandit safety
 
-### Ejecutar
-```bash
+# Run
 python bot.py
+
+# Make targets (preferred)
+make lint          # ruff linter
+make format        # ruff formatter
+make typecheck     # mypy strict
+make test          # pytest + coverage
+make security      # bandit + safety
+make all           # lint + typecheck + test + security
+make docker-build  # build Docker image
+make docker-up     # docker-compose up
 ```
 
-### Configuración del Entorno (.env)
-```
-TOKEN=tu_token_del_bot_telegram
-ADMIN_ID=tu_id_de_telegram
-MONGO_URI=mongodb+srv://usuario:password@cluster.mongodb.net/gym
-```
+## Environment (.env)
 
-## Pruebas
-
-```bash
-pytest
-pytest tests/test_archivo.py::test_nombre_funcion
-pytest --cov=. --cov-report=term-missing
+```
+TOKEN=your_telegram_bot_token
+ADMIN_ID=your_telegram_user_id
+MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/gym
+GROUP_ID=-1001234567890
 ```
 
-## Convenciones de Código
+## Code Conventions
 
-### Type Hints (Obligatorias)
+### Type hints (MANDATORY - enforced by mypy strict)
 ```python
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 ```
 
 ### Imports
-stdlib → third-party → local
+stdlib → third-party → local  (enforced by ruff I rule)
 
-### Convenciones de Nombres
-- Funciones: `snake_case`
-- Clases: `PascalCase`
-- Constantes: `UPPER_SNAKE_CASE`
+### Names
+- Functions: `snake_case`
+- Classes: `PascalCase`
+- Constants: `UPPER_SNAKE_CASE`
+- Private helpers: `_prefix`
 
-### Async/Await
-Usar `async def` para todos los handlers de Telegram.
+### Async/await
+Always `async def` for handlers. Use `await` for all Telegram API calls.
 
-### Manejo de Errores
-Usar try/except con logging y mensajes de error claros para el usuario.
+### Error handling
+- Narrow exceptions: prefer `TelegramError` over bare `Exception`
+- Log errors, return user-friendly messages
+- Last-resort `except Exception` is acceptable in handlers for state cleanup
 
-### Logging
-Usar `logging` module. Niveles: DEBUG, INFO, WARNING, ERROR.
+### State management
+- Prefer `context.user_data` over global dicts
+- When using global dicts, add `_ts` timestamp and `STATE_TIMEOUT = 600`
+- Always call `_clean_stale_states()` before setting new state
+- Always call `_del_state()` when flow completes or errors
 
-## Arquitectura del Proyecto
+## Architecture
 
 ```
 gym_bot_project/
-├── bot.py              # Entry point
-├── config.py           # Configuración
+├── bot.py                 # Entry point, app builder, job queue
+├── config.py              # Env vars, plans, roles, constants
 ├── database/
-│   └── __init__.py     # Conexión MongoDB
+│   └── __init__.py        # MongoDB pooling, indexes, collections
 ├── models/
-│   ├── member.py       # Modelo Member
-│   ├── payment.py      # Modelo Payment
-│   └── admin.py        # Modelo Admin
+│   ├── member.py          # Member dataclass (to_dict / from_dict)
+│   ├── payment.py         # Payment dataclass
+│   └── admin.py           # Admin dataclass
 ├── handlers/
-│   ├── start.py        # /start, /help
-│   ├── members.py      # Gestión de miembros
-│   ├── payments.py     # Pagos y planes
-│   ├── reports.py      # Reportes
-│   ├── stats.py        # Estadísticas
-│   ├── notifications.py # Notificaciones 5 AM
-│   ├── admins.py       # Gestión multi-admin
-│   ├── export.py       # Exportar datos
-│   └── button_handler.py
-├── keyboards.py        # Menús
+│   ├── start.py           # /start, /help, /getgroupid
+│   ├── members.py         # Member CRUD (add/search/delete/bulk)
+│   ├── payments.py        # Payment registration + history
+│   ├── reports.py         # Overdue report, Excel generation
+│   ├── stats.py           # Active members, income, expirations
+│   ├── notifications.py   # 5 AM daily job
+│   ├── admins.py          # Multi-admin CRUD + role management
+│   ├── export.py          # Excel (members/payments), TXT, CSV
+│   └── button_handler.py  # Menu routing + rate limiting
 ├── utils/
-│   └── dates.py        # Lógica de fechas
-├── requirements.txt
-└── render.yaml         # Deploy en Render
+│   ├── dates.py           # Due date math, grace/late logic
+│   ├── auth.py            # @require_role decorator, es_admin_grupo
+│   ├── audit.py           # CRUD audit log
+│   └── cache.py           # LRU cache for plans & config
+├── keyboards.py           # ReplyKeyboardMarkup definitions
+├── tests/                 # 87+ tests (pytest + coverage)
+│
+├── pyproject.toml         # Build system, ruff, mypy, pytest config
+├── Makefile               # Dev workflow
+├── Dockerfile             # Multi-stage build
+├── docker-compose.yml     # Bot + MongoDB
+├── .pre-commit-config.yaml
+└── render.yaml            # Render deploy
 ```
 
-## Lógica de Pagos
+## Payment Logic
 
 ```
-Vencimiento = fecha_pago + 1 mes (mismo día)
+DUE = payment_date + 1 month (same day)
 
-1-4 días después del vencimiento:
-  → GRACIA → Mantiene fecha original
+1-4 days overdue:
+  → GRACE → Original due date preserved
 
-5+ días después del vencimiento:
-  → TARDÍO → Nueva fecha = día de pago
+5+ days overdue:
+  → LATE → New due date = today + 1 month
 ```
 
-## Roles de Admin
+Edge cases handled: months with <31 days, year boundaries, leap years.
 
-| Rol | Permisos |
-|-----|----------|
-| super_admin | Todo + gestión de admins |
-| admin | Miembros, pagos, reportes, estadísticas |
-| viewer | Solo lectura |
+## Membership Plans
 
-## Planes de Membresía
+| Plan | Price | Months |
+|------|-------|--------|
+| Mensual | $500 | 1 |
+| Trimestral | $1,350 | 3 |
+| Semestral | $2,500 | 6 |
+| Anual | $4,500 | 12 |
 
-| Plan | Precio |
-|------|--------|
-| Mensual | $500 |
-| Trimestral | $1,350 |
-| Semestral | $2,500 |
-| Anual | $4,500 |
+## Admin Roles
 
-## Dependencias
+| Role | Level | Permissions |
+|------|-------|-------------|
+| super_admin | 3 | All + admin management |
+| admin | 2 | Members, payments, reports, stats, export |
+| viewer | 1 | Reports, stats (read-only) |
 
-- python-telegram-bot==20.7
-- pymongo==4.6.0
-- openpyxl
-- python-dateutil
+## Dependencies
+
+- python-telegram-bot[job-queue]>=21.0
 - python-dotenv
-- httpx==0.24.1
+- python-dateutil
+- openpyxl
+- pymongo>=4.6.0
 
-## Despliegue en Render
+## Dev Dependencies (optional)
 
-1. Crear cuenta en MongoDB Atlas
-2. Obtener connection string (MONGO_URI)
-3. Conectar Render con GitHub
-4. Configurar variables de entorno en Render
-5. Deploy automático
+- pytest, pytest-cov (tests)
+- mypy (type checking)
+- ruff (linting + formatting)
+- pre-commit (hooks)
+- bandit, safety (security)
 
 ## Git Workflow
 
-- Ramas: `feature/descripcion` o `fix/descripcion`
-- Commits: `feat: agregar funcionalidad` o `fix: resolver problema`
-- No commitear: `.env`, `data/`, `backup/`, `logs/`
+- Branches: `feature/description` or `fix/description`
+- Commits: `feat: add feature` or `fix: resolve bug`
+- Don't commit: `.env`, `logs/`, `reports/`, `__pycache__/`, `coverage_html/`, `.pytest_cache/`, `.mypy_cache/`
+
+## Testing
+
+```bash
+make test              # all tests + coverage
+pytest tests/test_file.py::TestClass::test_method  # single test
+pytest -m integration  # integration tests only (needs MongoDB)
+```
+
+## CI (GitHub Actions)
+
+- `test.yml`: ruff → mypy → pytest (every push/PR, Python 3.11 + 3.12)
+- `security.yml`: bandit + safety (weekly + main push)
+- `docker.yml`: build & push to Docker Hub (on tag v*)

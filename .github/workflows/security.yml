@@ -1,0 +1,28 @@
+name: Security
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  push:
+    branches: [main]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install bandit safety
+
+      - name: Bandit security scan
+        run: bandit -r bot.py config.py database/ handlers/ keyboards.py models/ utils/
+
+      - name: Safety dependency scan
+        run: safety check -r requirements.txt

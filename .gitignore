@@ -2,7 +2,7 @@
 .env
 
 # Python cache
-_pycache_/
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
@@ -18,6 +18,10 @@ logs/
 
 # Reports (generated at runtime)
 reports/
+
+# Coverage
+.coverage
+coverage_html/
 
 # OS files
 .DS_Store

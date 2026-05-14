@@ -1,16 +1,15 @@
 from dataclasses import dataclass, field
-from datetime import datetime, date
-from typing import Optional
+from datetime import datetime
 
 
 @dataclass
 class Member:
     name: str
-    phone: Optional[str] = None
+    phone: str | None = None
     active: bool = True
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
-    _id: Optional[str] = None
+    _id: str | None = None
 
     def to_dict(self) -> dict:
         data = {

@@ -1,19 +1,39 @@
+import calendar
+import logging
+import time
+from datetime import date, datetime
+
+from bson import ObjectId
+from dateutil.relativedelta import relativedelta
 from telegram import Update
 from telegram.ext import ContextTypes
-from datetime import datetime, date
-from dateutil.relativedelta import relativedelta
-import calendar
-from bson import ObjectId
-import logging
 
 from database import get_collection
-from keyboards import menu_miembros, menu_principal
-from utils import format_fecha, parse_fecha
+from keyboards import menu_miembros
 from models import Member
+from utils import format_fecha, parse_fecha
 
 logger = logging.getLogger(__name__)
 
-user_state = {}
+user_state: dict = {}
+STATE_TIMEOUT = 600  # 10 minutos
+
+def _clean_stale_states():
+    now = time.time()
+    stale = [
+        uid for uid, state in list(user_state.items())
+        if isinstance(state, dict) and now - state.get("_ts", 0) > STATE_TIMEOUT
+    ]
+    for uid in stale:
+        del user_state[uid]
+
+def _set_state(user_id: int, value):
+    if isinstance(value, dict):
+        value["_ts"] = time.time()
+    user_state[user_id] = value
+
+def _del_state(user_id: int):
+    user_state.pop(user_id, None)
 
 
 async def menu_members(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -22,7 +42,8 @@ async def menu_members(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def agregar_miembro_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    user_state[user_id] = "agregar_miembro"
+    _clean_stale_states()
+    _set_state(user_id, "agregar_miembro")
     await update.message.reply_text(
         "Ingresa: Nombre, Telefono, Fecha\n"
         "Ejemplo:\n"
@@ -32,7 +53,8 @@ async def agregar_miembro_start(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def agregar_varios_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    user_state[user_id] = "agregar_varios"
+    _clean_stale_states()
+    _set_state(user_id, "agregar_varios")
     await update.message.reply_text(
         "Ingresa uno por linea:\n"
         "Nombre Telefono YYYY-MM-DD\n"
@@ -43,19 +65,22 @@ async def agregar_varios_start(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def buscar_miembro_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    user_state[user_id] = "buscar_miembro"
+    _clean_stale_states()
+    _set_state(user_id, "buscar_miembro")
     await update.message.reply_text("Ingresa el nombre a buscar")
 
 
 async def eliminar_miembro_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    user_state[user_id] = "eliminar_miembro"
+    _clean_stale_states()
+    _set_state(user_id, "eliminar_miembro")
     await update.message.reply_text("Ingresa el nombre completo del miembro a eliminar")
 
 
 async def eliminar_varios_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    user_state[user_id] = "eliminar_varios"
+    _clean_stale_states()
+    _set_state(user_id, "eliminar_varios")
     await update.message.reply_text(
         "Ingresa los nombres uno por linea:\n"
         "Cesar Palacio Garcia\n"
@@ -66,14 +91,14 @@ async def eliminar_varios_start(update: Update, context: ContextTypes.DEFAULT_TY
 async def lista_miembros(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     members = get_collection("members")
     all_members = list(members.find({"active": True}))
-    
+
     if not all_members:
         await update.message.reply_text("No hay miembros registrados")
         return
-    
+
     payments = get_collection("payments")
     texto = "👥 MIEMBROS REGISTRADOS:\n\n"
-    
+
     for m in all_members:
         last_payment = payments.find_one(
             {"member_id": m["_id"]},
@@ -89,68 +114,67 @@ async def lista_miembros(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             texto += f"• {m['name']}"
             if m.get("phone"):
                 texto += f" 📱{m['phone']}"
-            texto += f"\n  Sin pagos registrados\n\n"
-    
+            texto += "\n  Sin pagos registrados\n\n"
+
     await update.message.reply_text(texto)
 
 
 async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     texto = update.message.text
-    
+
     if user_id not in user_state:
         return
-    
+
     estado = user_state[user_id]
     members = get_collection("members")
     payments = get_collection("payments")
-    
+
     try:
         if estado == "agregar_miembro":
             partes = texto.rsplit(" ", 2)
             if len(partes) != 3:
                 await update.message.reply_text("Formato incorrecto. Usa: Nombre Telefono YYYY-MM-DD")
-                del user_state[user_id]
+                _del_state(user_id)
                 return
-            
+
             nombre, telefono, fecha_str = partes
-            
+
             telefono = telefono.strip()
             if not (telefono.isdigit() and len(telefono) == 10 and telefono.startswith("3")):
-                await update.message.reply_text("Telefono invalido. Debe ser un numero colombiano de 10 digitos (ej: 3101234567)")
-                del user_state[user_id]
+                await update.message.reply_text(
+                    "Telefono invalido. Debe ser 10 digitos colombianos (ej: 3101234567)"
+                )
+                _del_state(user_id)
                 return
-            
+
             fecha = parse_fecha(fecha_str)
-            
+
             if not fecha:
                 await update.message.reply_text("Fecha invalida. Formato: YYYY-MM-DD")
-                del user_state[user_id]
+                _del_state(user_id)
                 return
-            
+
             if members.find_one({"name": nombre}):
                 await update.message.reply_text(f"El miembro '{nombre}' ya existe")
-                del user_state[user_id]
+                _del_state(user_id)
                 return
-            
+
             hoy = date.today()
             member = Member(name=nombre, phone=telefono)
             result = members.insert_one(member.to_dict())
             member_id = result.inserted_id
-            
+
             dia_pago = fecha.day
-            
-            if hoy.day > dia_pago:
-                vencimiento = hoy + relativedelta(months=1)
-            else:
-                vencimiento = hoy
-            
+
+            vencimiento = hoy + relativedelta(months=1) if hoy.day > dia_pago else hoy
+
             max_dia_mes = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
             if dia_pago > max_dia_mes:
                 vencimiento = vencimiento.replace(day=max_dia_mes)
             else:
                 vencimiento = vencimiento.replace(day=dia_pago)
-            
+
             payment_data = {
                 "member_id": str(member_id),
                 "member_name": nombre,
@@ -163,59 +187,56 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 "created_at": datetime.utcnow(),
             }
             payments.insert_one(payment_data)
-            
+
             await update.message.reply_text(f"✅ Miembro '{nombre}' agregado\nVence: {format_fecha(vencimiento)}")
-            del user_state[user_id]
-        
+            _del_state(user_id)
+
         elif estado == "agregar_varios":
             lineas = texto.split("\n")
             agregados = 0
             errores = 0
-            
+
             for linea in lineas:
                 linea = linea.strip()
                 if not linea:
                     continue
-                
+
                 partes = linea.rsplit(" ", 2)
                 if len(partes) != 3:
                     errores += 1
                     continue
-                
+
                 nombre, telefono, fecha_str = partes
                 telefono = telefono.strip()
-                
+
                 if not (telefono.isdigit() and len(telefono) == 10 and telefono.startswith("3")):
                     errores += 1
                     continue
-                
+
                 fecha = parse_fecha(fecha_str)
-                
+
                 if not fecha:
                     errores += 1
                     continue
-                
+
                 if members.find_one({"name": nombre}):
                     errores += 1
                     continue
-                
+
                 member = Member(name=nombre, phone=telefono)
                 result = members.insert_one(member.to_dict())
                 member_id = result.inserted_id
-                
+
                 dia_pago = fecha.day
-                
-                if hoy.day > dia_pago:
-                    vencimiento = hoy + relativedelta(months=1)
-                else:
-                    vencimiento = hoy
-                
+
+                vencimiento = hoy + relativedelta(months=1) if hoy.day > dia_pago else hoy
+
                 max_dia_mes = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
                 if dia_pago > max_dia_mes:
                     vencimiento = vencimiento.replace(day=max_dia_mes)
                 else:
                     vencimiento = vencimiento.replace(day=dia_pago)
-                
+
                 payment_data = {
                     "member_id": str(member_id),
                     "member_name": nombre,
@@ -229,16 +250,16 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 }
                 payments.insert_one(payment_data)
                 agregados += 1
-            
+
             await update.message.reply_text(
                 f"✅ Agregados: {agregados}\n"
                 f"❌ Errores: {errores}"
             )
-            del user_state[user_id]
-        
+            _del_state(user_id)
+
         elif estado == "buscar_miembro":
             member = members.find_one({"name": texto, "active": True})
-            
+
             if not member:
                 await update.message.reply_text("Miembro no encontrado")
             else:
@@ -246,28 +267,28 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                     {"member_id": str(member["_id"])},
                     sort=[("payment_date", -1)]
                 )
-                
+
                 msg = f"👤 {member['name']}\n"
                 if member.get("phone"):
                     msg += f"📱 {member['phone']}\n"
-                
+
                 if last_payment:
                     msg += f"📅 Fecha ingreso: {last_payment['payment_date']}\n"
                     msg += f"💰 Ultimo pago: {last_payment['payment_date']}\n"
                     msg += f"📅 Vence: {last_payment['due_date']}\n"
                     msg += f"📋 Plan: {last_payment['plan']}"
-                
+
                 await update.message.reply_text(msg)
-            
-            del user_state[user_id]
-        
+
+            _del_state(user_id)
+
         elif estado == "eliminar_miembro":
             member = members.find_one({"name": texto})
             payments_col = get_collection("payments")
-            
+
             logger.info(f"Buscando miembro para eliminar: '{texto}'")
             logger.info(f"Miembro encontrado: {member}")
-            
+
             if not member:
                 await update.message.reply_text(f"Miembro '{texto}' no encontrado")
             else:
@@ -275,20 +296,20 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 payments_col.delete_many({"member_id": str(member["_id"])})
                 logger.info(f"Miembro eliminado: {member['name']}")
                 await update.message.reply_text(f"✅ '{texto}' eliminado de la base de datos")
-            
-            del user_state[user_id]
-        
+
+            _del_state(user_id)
+
         elif estado == "eliminar_varios":
             nombres = texto.split("\n")
             eliminados = 0
             no_encontrados = 0
             payments_col = get_collection("payments")
-            
+
             for nombre in nombres:
                 nombre = nombre.strip()
                 if not nombre:
                     continue
-                
+
                 member = members.find_one({"name": nombre})
                 if member:
                     members.delete_one({"_id": ObjectId(member["_id"])})
@@ -296,17 +317,17 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                     eliminados += 1
                 else:
                     no_encontrados += 1
-            
+
             await update.message.reply_text(
                 f"✅ Eliminados: {eliminados}\n"
                 f"❌ No encontrados: {no_encontrados}"
             )
-            del user_state[user_id]
-    
+            _del_state(user_id)
+
     except Exception as e:
         logger.error(f"Error procesando miembro: {e}")
         await update.message.reply_text("Error al procesar. Intenta de nuevo.")
-        del user_state[user_id]
+        _del_state(user_id)
 
 
 def get_user_state():

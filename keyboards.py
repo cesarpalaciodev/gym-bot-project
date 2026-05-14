@@ -4,7 +4,7 @@ menu_principal = ReplyKeyboardMarkup(
     [
         ["👥 Miembros", "💰 Pagos"],
         ["📊 Reportes", "📈 Estadísticas"],
-        ["💾 Exportar"],
+        ["💾 Exportar", "⚙️ Administración"],
         ["⬅️ Volver"],
     ],
     resize_keyboard=True,
@@ -51,7 +51,7 @@ menu_exportar = ReplyKeyboardMarkup(
     [
         ["📊 Excel miembros"],
         ["📊 Excel pagos"],
-        ["📄 PDF resumen"],
+        ["📄 TXT resumen"],
         ["⬅️ Volver"],
     ],
     resize_keyboard=True,
@@ -70,7 +70,8 @@ menu_admin = ReplyKeyboardMarkup(
 
 menu_planes = ReplyKeyboardMarkup(
     [
-        ["1. Mensual ($70,000)"],
+        ["1. Mensual ($500)", "2. Trimestral ($1,350)"],
+        ["3. Semestral ($2,500)", "4. Anual ($4,500)"],
         ["⬅️ Cancelar"],
     ],
     resize_keyboard=True,
@@ -88,7 +89,7 @@ menu_principal_admin = ReplyKeyboardMarkup(
     [
         ["👥 Miembros", "💰 Pagos"],
         ["📊 Reportes", "📈 Estadísticas"],
-        ["💾 Exportar"],
+        ["💾 Exportar", "⚙️ Administración"],
         ["⬅️ Volver"],
     ],
     resize_keyboard=True,

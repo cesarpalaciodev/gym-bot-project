@@ -3,6 +3,7 @@
 # ==================================================
 
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,7 +24,10 @@ GRACE_DAYS = 4
 LATE_DAYS = 5
 
 PLANS = {
-    "1": {"name": "Mensual", "months": 1, "price": 70000},
+    "1": {"name": "Mensual", "months": 1, "price": 500},
+    "2": {"name": "Trimestral", "months": 3, "price": 1350},
+    "3": {"name": "Semestral", "months": 6, "price": 2500},
+    "4": {"name": "Anual", "months": 12, "price": 4500},
 }
 
 ADMIN_ROLES = {

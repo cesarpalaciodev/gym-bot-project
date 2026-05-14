@@ -1,6 +1,6 @@
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram import Update
 from telegram.error import TelegramError
+from telegram.ext import ContextTypes
 
 from keyboards import menu_principal
 
@@ -8,10 +8,10 @@ from keyboards import menu_principal
 async def verificar_admin_grupo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     chat = update.effective_chat
     user = update.effective_user
-    
+
     if chat.type == "private":
         return True
-    
+
     try:
         member = await context.bot.get_chat_member(chat.id, user.id)
         return member.status in ["creator", "administrator"]
@@ -23,7 +23,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await verificar_admin_grupo(update, context):
         await update.message.reply_text("No tienes acceso. Debes ser admin del grupo.")
         return
-    
+
     await update.message.reply_text(
         "🏋️ Sistema del gimnasio",
         reply_markup=menu_principal,
