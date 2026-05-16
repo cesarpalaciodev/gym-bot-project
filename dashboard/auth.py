@@ -6,7 +6,7 @@ import secrets
 import time
 from typing import Any
 
-from fastapi import Cookie, Request
+from fastapi import Request
 
 from config import ADMIN_ID
 from database import get_collection
@@ -49,7 +49,7 @@ def get_session_from_cookie(cookie: str | None) -> dict[str, Any] | None:
     return data
 
 
-async def _verify_admin(chat_id: int) -> dict | None:
+async def _verify_admin(chat_id: int) -> dict[str, Any] | None:
     if ADMIN_ID > 0 and chat_id == ADMIN_ID:
         return {"chat_id": chat_id, "name": f"Admin {chat_id}"}
     try:
@@ -62,7 +62,7 @@ async def _verify_admin(chat_id: int) -> dict | None:
     return None
 
 
-async def get_current_admin(request: Request) -> dict | None:
+async def get_current_admin(request: Request) -> dict[str, Any] | None:
     session = request.cookies.get(COOKIE_NAME)
     chat_id_q = request.query_params.get("chat_id")
     try:

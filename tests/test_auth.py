@@ -1,4 +1,6 @@
-from utils.auth import ROLE_HIERARCHY
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from utils.auth import ROLE_HIERARCHY, require_role
 
 
 class TestRoleHierarchy:
@@ -17,3 +19,55 @@ class TestRoleHierarchy:
     def test_all_expected_roles_present(self):
         for role in ["super_admin", "admin", "viewer"]:
             assert role in ROLE_HIERARCHY
+
+
+class TestRequireRole:
+    @patch("utils.auth.get_collection")
+    async def test_no_admin_does_not_call_handler(self, mock_get_collection):
+        mock_col = AsyncMock()
+        mock_col.find_one = AsyncMock(return_value=None)
+        mock_get_collection.return_value = mock_col
+
+        handler = MagicMock()
+        handler.__name__ = "test_handler"
+
+        update = MagicMock()
+        update.effective_user.id = 999
+        update.effective_user.username = "test"
+        update.message.reply_text = AsyncMock()
+
+        context = MagicMock()
+
+        decorator = require_role("admin")
+        wrapped = decorator(handler)
+
+        result = await wrapped(update, context)
+
+        handler.assert_not_called()
+        assert result is None
+        update.message.reply_text.assert_awaited_once_with("No autorizado. Solo administradores.")
+
+    @patch("utils.auth.get_collection")
+    async def test_low_role_does_not_call_handler(self, mock_get_collection):
+        mock_col = AsyncMock()
+        mock_col.find_one = AsyncMock(return_value={"telegram_id": 999, "role": "viewer"})
+        mock_get_collection.return_value = mock_col
+
+        handler = MagicMock()
+        handler.__name__ = "test_handler"
+
+        update = MagicMock()
+        update.effective_user.id = 999
+        update.effective_user.username = "test"
+        update.message.reply_text = AsyncMock()
+
+        context = MagicMock()
+
+        decorator = require_role("admin")
+        wrapped = decorator(handler)
+
+        result = await wrapped(update, context)
+
+        handler.assert_not_called()
+        assert result is None
+        update.message.reply_text.assert_awaited_once_with("No tienes permisos suficientes.")

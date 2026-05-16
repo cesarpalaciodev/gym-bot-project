@@ -1,4 +1,3 @@
-import calendar
 import logging
 import time
 from datetime import date, datetime
@@ -11,7 +10,7 @@ from telegram.ext import ContextTypes
 from database import get_collection
 from keyboards import menu_miembros
 from models import Member
-from utils import format_fecha, parse_fecha
+from utils import calcular_due_date, format_fecha, parse_fecha
 
 logger = logging.getLogger(__name__)
 
@@ -159,14 +158,8 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             member_id = result.inserted_id
 
             dia_pago = fecha.day
-
-            vencimiento = hoy + relativedelta(months=1) if hoy.day > dia_pago else hoy
-
-            max_dia_mes = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
-            if dia_pago > max_dia_mes:
-                vencimiento = vencimiento.replace(day=max_dia_mes)
-            else:
-                vencimiento = vencimiento.replace(day=dia_pago)
+            base = hoy + relativedelta(months=1) if hoy.day > dia_pago else hoy
+            vencimiento = calcular_due_date(base, dia_pago)
 
             payment_data = {
                 "member_id": str(member_id),
@@ -222,14 +215,8 @@ async def procesar_miembro(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 member_id = result.inserted_id
 
                 dia_pago = fecha.day
-
-                vencimiento = hoy + relativedelta(months=1) if hoy.day > dia_pago else hoy
-
-                max_dia_mes = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
-                if dia_pago > max_dia_mes:
-                    vencimiento = vencimiento.replace(day=max_dia_mes)
-                else:
-                    vencimiento = vencimiento.replace(day=dia_pago)
+                base = hoy + relativedelta(months=1) if hoy.day > dia_pago else hoy
+                vencimiento = calcular_due_date(base, dia_pago)
 
                 payment_data = {
                     "member_id": str(member_id),

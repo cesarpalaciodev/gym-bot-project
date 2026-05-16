@@ -144,15 +144,14 @@ async def procesar_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             _set_state(user_id, {"step": "agregar_nombre", "telegram_id": telegram_id})
             await update.message.reply_text("Ingresa el nombre del nuevo admin:")
 
-        elif estado == "agregar_nombre":
-            if isinstance(admin_state[user_id], dict) and admin_state[user_id].get("step") == "agregar_nombre":
-                nuevo_admin = Admin(telegram_id=admin_state[user_id]["telegram_id"], name=texto, role="admin")
-                await admins_col.insert_one(nuevo_admin.to_dict())
+        elif isinstance(estado, dict) and estado.get("step") == "agregar_nombre":
+            nuevo_admin = Admin(telegram_id=admin_state[user_id]["telegram_id"], name=texto, role="admin")
+            await admins_col.insert_one(nuevo_admin.to_dict())
 
-                await update.message.reply_text(
-                    f"✅ Admin agregado:\n👤 {texto}\n🆔 {nuevo_admin.telegram_id}\n📋 Rol: admin"
-                )
-                _del_state(user_id)
+            await update.message.reply_text(
+                f"✅ Admin agregado:\n👤 {texto}\n🆔 {nuevo_admin.telegram_id}\n📋 Rol: admin"
+            )
+            _del_state(user_id)
 
         elif estado == "quitar_admin":
             try:

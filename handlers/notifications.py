@@ -1,6 +1,7 @@
 import logging
 from datetime import date, datetime
 
+from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
 from config import GROUP_ID
@@ -76,5 +77,7 @@ async def notificacion_5am(context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         await context.bot.send_message(chat_id=GROUP_ID, text=texto)
         logger.info("Notificacion 5AM enviada al grupo")
+    except TelegramError as e:
+        logger.error(f"Error de Telegram enviando notificacion: {e}")
     except Exception as e:
-        logger.error(f"Error enviando notificacion: {e}")
+        logger.exception(f"Error inesperado enviando notificacion: {e}")

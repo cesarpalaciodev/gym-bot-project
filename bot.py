@@ -96,7 +96,7 @@ def run_dashboard() -> None:
         start_dashboard()
     except ImportError:
         logger.info("Dashboard no disponible")
-    except Exception as e:
+    except (OSError, RuntimeError) as e:
         logger.error(f"Error iniciando dashboard: {e}")
 
 

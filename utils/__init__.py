@@ -3,6 +3,7 @@ from .auth import es_admin_grupo, require_role
 from .cache import get_plan_by_key, get_plans, invalidate_plans_cache
 from .dates import (
     calcular_dias_vencido,
+    calcular_due_date,
     calcular_proximo_vencimiento,
     calcular_vencimiento_con_gracia,
     es_gracia,
@@ -15,6 +16,7 @@ from .rate_limit import check_rate_limit, check_rate_limit_sync, close_rate_limi
 
 __all__ = [
     "calcular_dias_vencido",
+    "calcular_due_date",
     "calcular_proximo_vencimiento",
     "calcular_vencimiento_con_gracia",
     "check_rate_limit",

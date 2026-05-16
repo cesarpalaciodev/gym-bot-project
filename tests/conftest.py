@@ -21,6 +21,7 @@ def mock_context():
     context = MagicMock()
     context.user_data = {}
     context.bot.get_chat_member = AsyncMock()
+    context.bot.send_message = AsyncMock()
     return context
 
 

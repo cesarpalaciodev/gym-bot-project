@@ -15,6 +15,8 @@ from . import admins, export, members, payments, reports, stats
 async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id if update.effective_user else 0
     if not await check_rate_limit(user_id):
+        if update.message:
+            await update.message.reply_text("Demasiadas solicitudes. Espera unos segundos.")
         return
 
     if not update.message or not update.message.text:

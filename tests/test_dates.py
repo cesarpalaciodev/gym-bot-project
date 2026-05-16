@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.dates import (
     calcular_dias_vencido,
+    calcular_due_date,
     calcular_proximo_vencimiento,
     calcular_vencimiento_con_gracia,
     es_gracia,
@@ -37,6 +38,26 @@ class TestCalcularProximoVencimiento:
         assert result == date(2024, 2, 29)
 
 
+class TestCalcularDueDate:
+    def test_mismo_dia(self):
+        assert calcular_due_date(date(2026, 5, 15), 15) == date(2026, 6, 15)
+
+    def test_dia_menor(self):
+        assert calcular_due_date(date(2026, 3, 10), 5) == date(2026, 4, 5)
+
+    def test_fin_mes_31_a_30(self):
+        assert calcular_due_date(date(2026, 3, 31), 31) == date(2026, 4, 30)
+
+    def test_enero_31_a_febrero_28(self):
+        assert calcular_due_date(date(2026, 1, 31), 31) == date(2026, 2, 28)
+
+    def test_bisiesto_enero_31_a_febrero_29(self):
+        assert calcular_due_date(date(2024, 1, 31), 31) == date(2024, 2, 29)
+
+    def test_diciembre_a_enero(self):
+        assert calcular_due_date(date(2026, 12, 10), 10) == date(2027, 1, 10)
+
+
 class TestCalcularDiasVencido:
     def test_no_vencido(self):
         due = date(2026, 5, 20)
@@ -55,6 +76,18 @@ class TestCalcularDiasVencido:
     def test_mismo_dia(self):
         due = date.today()
         assert calcular_dias_vencido(due) == 0
+
+    def test_cross_month_due_yesterday_still_overdue(self):
+        """May 1 vs Apr 30 due date should return 1, not 0."""
+        due = date(2026, 4, 30)
+        hoy = date(2026, 5, 1)
+        from unittest.mock import patch
+
+        with patch("utils.dates.date") as mock_date:
+            mock_date.today.return_value = hoy
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            result = calcular_dias_vencido(due)
+        assert result == 1, f"Expected 1, got {result}"
 
 
 class TestEsGracia:

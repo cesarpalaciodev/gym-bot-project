@@ -152,10 +152,7 @@ class TestProcesarAdmin:
             "_ts": pytest.approx(time.time(), abs=2),
         }
 
-    async def test_agregar_nombre_reaches_dead_code(self, mock_update, mock_context, mock_collection):
-        """The estado == 'agregar_nombre' check compares a dict to a string and
-        can never be True given _set_state stores a dict for this step.
-        This test documents the dead-code behaviour: the inner block is never reached."""
+    async def test_agregar_nombre_success(self, mock_update, mock_context, mock_collection):
         new_name = "Nuevo Admin"
         mock_update.message.text = new_name
         admins.admin_state[FAKE_USER_ID] = {
@@ -164,9 +161,9 @@ class TestProcesarAdmin:
             "_ts": time.time(),
         }
         await admins.procesar_admin(mock_update, mock_context)
-        mock_collection.insert_one.assert_not_called()
-        mock_update.message.reply_text.assert_not_called()
-        assert FAKE_USER_ID in admins.admin_state
+        mock_collection.insert_one.assert_called_once()
+        mock_update.message.reply_text.assert_called_once()
+        assert FAKE_USER_ID not in admins.admin_state
 
     async def test_quitar_admin_success(self, mock_update, mock_context, mock_collection):
         mock_update.message.text = str(FAKE_TARGET_ID)

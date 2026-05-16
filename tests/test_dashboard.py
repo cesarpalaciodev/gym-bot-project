@@ -1,0 +1,114 @@
+from __future__ import annotations
+
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from dashboard.auth import (
+    _sign,
+    _verify_admin,
+    create_session,
+    get_current_admin,
+    get_session_from_cookie,
+)
+
+
+@pytest.fixture(autouse=True)
+def clear_sessions():
+    from dashboard.auth import _sessions
+
+    _sessions.clear()
+
+
+class TestVerifyAdmin:
+    @patch("dashboard.auth.ADMIN_ID", 12345)
+    async def test_matches_admin_id(self):
+        result = await _verify_admin(12345)
+        assert result is not None
+        assert result["chat_id"] == 12345
+
+    @patch("dashboard.auth.ADMIN_ID", 12345)
+    async def test_does_not_match(self):
+        result = await _verify_admin(99999)
+        assert result is None
+
+    @patch("dashboard.auth.ADMIN_ID", 0)
+    async def test_admin_id_zero_fallback_to_db(self):
+        result = await _verify_admin(99999)
+        assert result is None
+
+
+class TestCreateSession:
+    @patch("dashboard.auth.ADMIN_ID", 12345)
+    def test_create_and_verify_session(self):
+        token = create_session(12345)
+        assert "." in token
+        payload, sig = token.split(".")
+        expected_sig = _sign(payload)
+        assert sig == expected_sig[:12]
+
+    @patch("dashboard.auth.ADMIN_ID", 12345)
+    def test_session_expires(self, monkeypatch):
+        import time as time_module
+
+        original_time = time_module.time
+        token = create_session(12345)
+        monkeypatch.setattr("dashboard.auth.time.time", lambda: original_time() + 86400 * 8)
+        result = get_session_from_cookie(token)
+        assert result is None
+
+
+class TestGetSessionFromCookie:
+    @patch("dashboard.auth.ADMIN_ID", 12345)
+    def test_valid_session(self):
+        token = create_session(12345)
+        data = get_session_from_cookie(token)
+        assert data is not None
+        assert data["chat_id"] == 12345
+
+    def test_none_cookie(self):
+        assert get_session_from_cookie(None) is None
+
+    def test_malformed_cookie(self):
+        assert get_session_from_cookie("invalid") is None
+
+    def test_tampered_cookie(self):
+        token = create_session(12345)
+        tampered = token.replace("a", "b")
+        result = get_session_from_cookie(tampered)
+        assert result is None
+
+
+class TestGetCurrentAdmin:
+    @patch("dashboard.auth.ADMIN_ID", 12345)
+    async def test_with_valid_session(self):
+        token = create_session(12345)
+        request = MagicMock()
+        request.cookies.get.return_value = token
+        request.query_params.get.return_value = None
+        result = await get_current_admin(request)
+        assert result is not None
+        assert result["chat_id"] == 12345
+
+    async def test_without_session(self):
+        request = MagicMock()
+        request.cookies.get.return_value = None
+        request.query_params.get.return_value = None
+        result = await get_current_admin(request)
+        assert result is None
+
+    @patch("dashboard.auth.ADMIN_ID", 12345)
+    async def test_with_chat_id_query_param(self):
+        request = MagicMock()
+        request.cookies.get.return_value = None
+        request.query_params.get.return_value = "12345"
+        result = await get_current_admin(request)
+        assert result is not None
+        assert result["chat_id"] == 12345
+
+    async def test_with_invalid_chat_id_query_param(self):
+        request = MagicMock()
+        request.cookies.get.return_value = None
+        request.query_params.get.return_value = "abc"
+        result = await get_current_admin(request)
+        assert result is None

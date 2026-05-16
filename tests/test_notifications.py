@@ -197,7 +197,7 @@ class TestNotificacion5am:
         from handlers.notifications import notificacion_5am
 
         await notificacion_5am(mock_context)
-        assert any("Error enviando notificacion" in rec.message for rec in caplog.records)
+        assert any("Error" in rec.message for rec in caplog.records)
 
     async def test_notificacion_includes_date_header(
         self, mock_context, patch_collections, fixed_today, patch_group_id, mock_send_message

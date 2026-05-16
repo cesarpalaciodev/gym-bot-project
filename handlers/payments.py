@@ -1,9 +1,7 @@
-import calendar
 import logging
 import time
 from datetime import date, datetime
 
-from dateutil.relativedelta import relativedelta
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -12,6 +10,7 @@ from database import get_collection
 from keyboards import menu_confirmar, menu_pagos, menu_planes, menu_principal
 from utils import (
     calcular_dias_vencido,
+    calcular_due_date,
     format_fecha,
 )
 
@@ -147,27 +146,18 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
             grace_period = False
             if state["last_payment"]:
-                ultimo_pago_date = datetime.strptime(state["last_payment"]["payment_date"], "%Y-%m-%d").date()
                 vencimiento_anterior = datetime.strptime(state["last_payment"]["due_date"], "%Y-%m-%d").date()
                 dia_pago = vencimiento_anterior.day
-                dias_vencido = hoy.day - dia_pago
+                dias_vencido = calcular_dias_vencido(vencimiento_anterior)
+                ultimo_pago_date = datetime.strptime(state["last_payment"]["payment_date"], "%Y-%m-%d").date()
 
                 if dias_vencido > 4:
-                    nuevo_vencimiento = hoy + relativedelta(months=1)
-                    ultimo_dia = calendar.monthrange(nuevo_vencimiento.year, nuevo_vencimiento.month)[1]
-                    dia_real = min(hoy.day, ultimo_dia)
-                    nuevo_vencimiento = nuevo_vencimiento.replace(day=dia_real)
+                    nuevo_vencimiento = calcular_due_date(hoy, hoy.day)
                 else:
-                    nuevo_vencimiento = ultimo_pago_date + relativedelta(months=1)
-                    ultimo_dia = calendar.monthrange(nuevo_vencimiento.year, nuevo_vencimiento.month)[1]
-                    dia_real = min(dia_pago, ultimo_dia)
-                    nuevo_vencimiento = nuevo_vencimiento.replace(day=dia_real)
+                    nuevo_vencimiento = calcular_due_date(ultimo_pago_date, dia_pago)
                     grace_period = True
             else:
-                nuevo_vencimiento = hoy + relativedelta(months=1)
-                ultimo_dia = calendar.monthrange(nuevo_vencimiento.year, nuevo_vencimiento.month)[1]
-                dia_real = min(hoy.day, ultimo_dia)
-                nuevo_vencimiento = nuevo_vencimiento.replace(day=dia_real)
+                nuevo_vencimiento = calcular_due_date(hoy, hoy.day)
 
             payment_data = {
                 "member_id": state["member_id"],

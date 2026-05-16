@@ -22,13 +22,12 @@ def calcular_proximo_vencimiento(fecha_pago: date) -> date:
 
 def calcular_dias_vencido(fecha_vencimiento: date) -> int:
     hoy = date.today()
+    diff = (hoy - fecha_vencimiento).days
 
-    dia_pago = fecha_vencimiento.day
-
-    if hoy.day < dia_pago:
+    if diff <= 0:
         return 0
 
-    return (hoy - fecha_vencimiento).days
+    return diff
 
 
 def es_gracia(fecha_vencimiento: date) -> bool:
@@ -44,6 +43,12 @@ def obtener_siguiente_fecha_pago(fecha_pago: date, es_tardio: bool) -> date:
     if es_tardio:
         return date.today()
     return fecha_pago
+
+
+def calcular_due_date(fecha_base: date, dia_pago: int) -> date:
+    vencimiento = fecha_base + relativedelta(months=1)
+    max_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
+    return vencimiento.replace(day=min(dia_pago, max_dia))
 
 
 def get_ultimo_dia_mes(fecha: date) -> date:
