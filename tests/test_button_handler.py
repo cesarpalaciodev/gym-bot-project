@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time as time_module
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -9,8 +8,9 @@ import handlers.button_handler as bh
 
 
 @pytest.fixture(autouse=True)
-def clear_rate_limit():
-    bh.RATE_LIMIT.clear()
+def mock_rate_limit():
+    with patch("handlers.button_handler.check_rate_limit", return_value=True):
+        yield
 
 
 class TestBotonesRouting:
@@ -97,41 +97,31 @@ class TestBotonesNoMessageOrText:
 
 
 class TestBotonesRateLimit:
-    async def test_rate_limit_blocks_after_ten_requests(self, mock_update, mock_context):
+    async def test_rate_limit_blocks_when_check_returns_false(self, mock_update, mock_context):
         mock_update.message.text = "👥 Miembros"
-        for _ in range(10):
-            bh.RATE_LIMIT[12345].append(time_module.time())
+        with patch("handlers.button_handler.check_rate_limit", return_value=False):
+            with patch("handlers.button_handler.members.menu_members", new_callable=AsyncMock) as mock_fn:
+                await bh.botones(mock_update, mock_context)
+            mock_fn.assert_not_called()
 
-        with patch("handlers.button_handler.members.menu_members", new_callable=AsyncMock) as mock_fn:
-            await bh.botones(mock_update, mock_context)
-        mock_fn.assert_not_called()
-
-    async def test_rate_limit_allows_after_window_expires(self, mock_update, mock_context):
+    async def test_rate_limit_allows_when_check_returns_true(self, mock_update, mock_context):
         mock_update.message.text = "👥 Miembros"
-        old_time = time_module.time() - 10
-        bh.RATE_LIMIT[12345] = [old_time] * 10
-
         with patch("handlers.button_handler.members.menu_members", new_callable=AsyncMock) as mock_fn:
             await bh.botones(mock_update, mock_context)
         mock_fn.assert_awaited_once_with(mock_update, mock_context)
 
     async def test_rate_limit_tracks_per_user(self, mock_update, mock_context):
         mock_update.message.text = "👥 Miembros"
-        other_user_id = 99999
-        bh.RATE_LIMIT[other_user_id] = [time_module.time()] * 10
-
         with patch("handlers.button_handler.members.menu_members", new_callable=AsyncMock) as mock_fn:
             await bh.botones(mock_update, mock_context)
         mock_fn.assert_awaited_once_with(mock_update, mock_context)
 
-    async def test_rate_limit_exact_boundary_allows_nine(self, mock_update, mock_context):
+    async def test_rate_limit_rejects_when_unauthenticated(self, mock_update, mock_context):
+        mock_update.effective_user = None
         mock_update.message.text = "👥 Miembros"
-        for _ in range(9):
-            bh.RATE_LIMIT[12345].append(time_module.time())
-
-        with patch("handlers.button_handler.members.menu_members", new_callable=AsyncMock) as mock_fn:
+        with patch("handlers.button_handler.check_rate_limit") as mock_check:
             await bh.botones(mock_update, mock_context)
-        mock_fn.assert_awaited_once_with(mock_update, mock_context)
+            mock_check.assert_awaited_once_with(0)
 
 
 class TestBotonesGroupAdmin:

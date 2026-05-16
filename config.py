@@ -11,6 +11,9 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 GROUP_ID = os.getenv("GROUP_ID", "")
 MONGO_URI = os.getenv("MONGO_URI", "")
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+REDIS_URL = os.getenv("REDIS_URL", "")
+DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "8000"))
 
 DATA_DIR = "data"
 BACKUP_DIR = "backup"

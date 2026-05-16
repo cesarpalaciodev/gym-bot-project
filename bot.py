@@ -1,15 +1,26 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from datetime import time
 
+import sentry_sdk
 from telegram import Update
 from telegram.error import TelegramError
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
-from config import TOKEN
+from config import SENTRY_DSN, TOKEN
 from database import init_collections
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        traces_sample_rate=0.1,
+        environment=os.getenv("ENVIRONMENT", "production"),
+    )
+    logger = logging.getLogger(__name__)
+    logger.info("Sentry initialized")
 from handlers import (
     botones,
     getgroupid,
@@ -78,10 +89,19 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("✅ Operación cancelada")
 
 
+def run_dashboard() -> None:
+    try:
+        from dashboard import start_dashboard
+
+        start_dashboard()
+    except ImportError:
+        logger.info("Dashboard no disponible")
+    except Exception as e:
+        logger.error(f"Error iniciando dashboard: {e}")
+
+
 def main() -> None:
     logger.info("Iniciando bot...")
-
-    import asyncio
 
     asyncio.run(setup_database())
 
@@ -103,6 +123,11 @@ def main() -> None:
 
     logger.info("Bot iniciado")
     print("Bot corriendo...", flush=True)
+
+    import threading
+
+    dash_thread = threading.Thread(target=run_dashboard, daemon=True)
+    dash_thread.start()
 
     app.run_polling(
         poll_interval=3,

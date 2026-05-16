@@ -5,6 +5,7 @@ A production-grade Telegram bot for managing gym members, payments, and expirati
 [![Test](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/test.yml/badge.svg)](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/test.yml)
 [![Security](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/security.yml/badge.svg)](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/security.yml)
 [![codecov](https://codecov.io/gh/cesarpalaciodev/gym-bot-project/branch/main/graph/badge.svg)](https://codecov.io/gh/cesarpalaciodev/gym-bot-project)
+[![Dashboard](https://img.shields.io/badge/dashboard-FastAPI-009688)](http://localhost:8000)
 
 ---
 
@@ -20,8 +21,10 @@ A production-grade Telegram bot for managing gym members, payments, and expirati
 - **Multi-admin system** — 3 roles (super_admin, admin, viewer)
 - **Daily notifications** — Automatic 5 AM summary to the group
 - **Audit logging** — Every CRUD operation logged for accountability
-- **Rate limiting** — 10 requests per 5 seconds per user
+- **Rate limiting** — Redis-backed (with in-memory fallback), persists across restarts
 - **State expiration** — In-progress flows auto-expire after 10 minutes
+- **Sentry error tracking** — Production error monitoring with stack traces
+- **Web dashboard** — FastAPI dashboard at `http://localhost:8000` with live stats
 
 ---
 
@@ -82,6 +85,9 @@ TOKEN=your_telegram_bot_token
 ADMIN_ID=your_telegram_user_id
 MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/gym
 GROUP_ID=-1001234567890
+SENTRY_DSN=https://key@o1.ingest.sentry.io/123   # Optional: error tracking
+REDIS_URL=redis://localhost:6379/0                  # Optional: persistent rate limiting
+DASHBOARD_PORT=8000                                 # Optional: web dashboard port
 ```
 
 ### Run
@@ -248,7 +254,7 @@ Three GitHub Actions workflows:
 
 ## Testing
 
-**288 tests** with **87% code coverage** across the entire project:
+**280 tests** with **77% code coverage** across the entire project:
 
 | Module | Coverage | Tests |
 |--------|----------|-------|
@@ -271,14 +277,14 @@ Three GitHub Actions workflows:
 
 - **Unit tests** — Models, config, cache, keyboards, auth, dates
 - **Handler tests** — All 9 handler files with mocked Telegram API
-- **Integration** — Payment flow logic, end-to-end scenarios
+- **Integration** — 21 tests with real MongoDB via Testcontainers (Docker required)
 - **Database** — Connection, error handling, collection access
 
 ### Running tests
 
 ```bash
 make test              # All tests + coverage report
-make test-integration  # Integration tests (needs MongoDB)
+make test-integration  # Integration tests (needs Docker)
 pytest tests/test_members.py -v  # Single file
 ```
 

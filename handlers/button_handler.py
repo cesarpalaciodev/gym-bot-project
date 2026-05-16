@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import time as time_module
-from collections import defaultdict
-
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -10,23 +7,15 @@ from database import get_collection
 from keyboards import (
     menu_principal,
 )
-from utils import es_admin_grupo
+from utils import check_rate_limit, es_admin_grupo
 
 from . import admins, export, members, payments, reports, stats
-
-RATE_LIMIT: defaultdict[int, list[float]] = defaultdict(list)
-RATE_MAX = 10
-RATE_WINDOW = 5
 
 
 async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id if update.effective_user else 0
-    now = time_module.time()
-    window_start = now - RATE_WINDOW
-    RATE_LIMIT[user_id] = [t for t in RATE_LIMIT[user_id] if t > window_start]
-    if len(RATE_LIMIT[user_id]) >= RATE_MAX:
+    if not await check_rate_limit(user_id):
         return
-    RATE_LIMIT[user_id].append(now)
 
     if not update.message or not update.message.text:
         return
