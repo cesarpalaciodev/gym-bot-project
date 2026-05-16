@@ -24,7 +24,7 @@ A production-grade Telegram bot for managing gym members, payments, and expirati
 - **Rate limiting** — Redis-backed (with in-memory fallback), persists across restarts
 - **State expiration** — In-progress flows auto-expire after 10 minutes
 - **Sentry error tracking** — Production error monitoring with stack traces
-- **Web dashboard** — FastAPI dashboard at `http://localhost:8000` with live stats
+- **Web dashboard** — FastAPI dashboard at `http://localhost:3000` with live stats
 
 ---
 
@@ -87,7 +87,7 @@ MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/gym
 GROUP_ID=-1001234567890
 SENTRY_DSN=https://key@o1.ingest.sentry.io/123   # Optional: error tracking
 REDIS_URL=redis://localhost:6379/0                  # Optional: persistent rate limiting
-DASHBOARD_PORT=8000                                 # Optional: web dashboard port
+DASHBOARD_PORT=3000                                 # Optional: web dashboard port
 ```
 
 ### Run
