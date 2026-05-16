@@ -20,26 +20,30 @@ logger = logging.getLogger(__name__)
 payment_state: dict = {}
 STATE_TIMEOUT = 600
 
+
 def _clean_stale_states():
     now = time.time()
     stale = [
-        uid for uid, state in list(payment_state.items())
+        uid
+        for uid, state in list(payment_state.items())
         if isinstance(state, dict) and now - state.get("_ts", 0) > STATE_TIMEOUT
     ]
     for uid in stale:
         del payment_state[uid]
+
 
 def _set_state(user_id: int, value):
     if isinstance(value, dict):
         value["_ts"] = time.time()
     payment_state[user_id] = value
 
+
 def _del_state(user_id: int):
     payment_state.pop(user_id, None)
 
 
 async def menu_payments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("💰 Menu pagos", reply_markup=menu_pagos)
+    await update.message.reply_text("Menu pagos", reply_markup=menu_pagos)
 
 
 async def registrar_pago_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -64,38 +68,34 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
 
     state = payment_state[user_id]
-    members = get_collection("members")
-    payments_col = get_collection("payments")
+    members = await get_collection("members")
+    payments_col = await get_collection("payments")
 
     try:
         if state["step"] == "nombre":
-            member = members.find_one({"name": texto, "active": True})
+            member = await members.find_one({"name": texto, "active": True})
 
             if not member:
                 await update.message.reply_text("Miembro no encontrado")
                 _del_state(user_id)
                 return
 
-            last_payment = payments_col.find_one(
-                {"member_id": str(member["_id"])},
-                sort=[("payment_date", -1)]
+            last_payment = await payments_col.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
+
+            _set_state(
+                user_id,
+                {
+                    "step": "plan",
+                    "member_id": str(member["_id"]),
+                    "member_name": texto,
+                    "last_payment": last_payment,
+                },
             )
 
-            _set_state(user_id, {
-                "step": "plan",
-                "member_id": str(member["_id"]),
-                "member_name": texto,
-                "last_payment": last_payment,
-            })
-
-            await update.message.reply_text(
-                f"Miembro: {texto}\n\n"
-                f"Selecciona el plan:",
-                reply_markup=menu_planes
-            )
+            await update.message.reply_text(f"Miembro: {texto}\n\nSelecciona el plan:", reply_markup=menu_planes)
 
         elif state["step"] == "plan":
-            if texto == "⬅️ Cancelar":
+            if texto == "Cancelar":
                 _del_state(user_id)
                 await update.message.reply_text("Operacion cancelada")
                 return
@@ -117,27 +117,27 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             grace_text = ""
             if dias_vencido > 0:
                 if dias_vencido <= 4:
-                    grace_text = "\n⚠️ Dentro del periodo de gracia (1-4 dias)"
+                    grace_text = "\n Dentro del periodo de gracia (1-4 dias)"
                 else:
-                    grace_text = f"\n⚠️ {dias_vencido} dias de retraso"
+                    grace_text = f"\n {dias_vencido} dias de retraso"
 
             await update.message.reply_text(
-                f"📋 Resumen del pago:\n\n"
-                f"👤 Miembro: {state['member_name']}\n"
-                f"📦 Plan: {plan['name']}\n"
-                f"💵 Monto: ${plan['price']}\n"
-                f"📅 Duracion: {plan['months']} mes(es){grace_text}\n\n"
-                f"¿Confirmar?",
-                reply_markup=menu_confirmar
+                f"Resumen del pago:\n\n"
+                f"Miembro: {state['member_name']}\n"
+                f"Plan: {plan['name']}\n"
+                f"Monto: ${plan['price']}\n"
+                f"Duracion: {plan['months']} mes(es){grace_text}\n\n"
+                f"\u00bfCConfirmar?",
+                reply_markup=menu_confirmar,
             )
 
         elif state["step"] == "confirmar":
-            if texto == "❌ Cancelar":
+            if texto == "Cancelar":
                 _del_state(user_id)
                 await update.message.reply_text("Operacion cancelada")
                 return
 
-            if texto != "✅ Confirmar":
+            if texto != "Confirmar":
                 await update.message.reply_text("Selecciona una opcion valida", reply_markup=menu_confirmar)
                 return
 
@@ -181,45 +181,45 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 "created_at": datetime.utcnow(),
             }
 
-            payments_col.insert_one(payment_data)
+            await payments_col.insert_one(payment_data)
 
             await update.message.reply_text(
-                f"✅ Pago registrado!\n\n"
-                f"👤 Miembro: {state['member_name']}\n"
-                f"💵 Monto: ${plan['price']}\n"
-                f"📅 Pago: {payment_date_str}\n"
-                f"📅 Vence: {format_fecha(nuevo_vencimiento)}\n"
-                f"{'⚠️ Periodo de gracia' if grace_period else ''}",
-                reply_markup=menu_principal
+                f"Pago registrado!\n\n"
+                f"Miembro: {state['member_name']}\n"
+                f"Monto: ${plan['price']}\n"
+                f"Pago: {payment_date_str}\n"
+                f"Vence: {format_fecha(nuevo_vencimiento)}\n"
+                f"{'Periodo de gracia' if grace_period else ''}",
+                reply_markup=menu_principal,
             )
 
             _del_state(user_id)
 
         elif state["step"] == "historial_nombre":
-            member = members.find_one({"name": texto, "active": True})
+            member = await members.find_one({"name": texto, "active": True})
 
             if not member:
                 await update.message.reply_text("Miembro no encontrado")
                 _del_state(user_id)
                 return
 
-            all_payments = list(payments_col.find(
-                {"member_id": str(member["_id"])}
-            ).sort("payment_date", -1))
+            all_payments = (
+                await payments_col.find({"member_id": str(member["_id"])}).sort("payment_date", -1).to_list(None)
+            )
 
             if not all_payments:
                 await update.message.reply_text("Sin historial de pagos")
                 _del_state(user_id)
                 return
 
-            msg = "📜 HISTORIAL DE PAGOS\n"
-            msg += f"👤 {texto}\n\n"
+            msg = "HISTORIAL DE PAGOS\n"
+            msg += f" {texto}\n\n"
 
             for i, p in enumerate(all_payments[:10], 1):
                 msg += f"{i}. {p['payment_date']} - ${p['amount']} ({p['plan']})\n"
                 msg += f"   Vence: {p['due_date']}"
                 if p.get("grace_period"):
-                    msg += " ⚠️"
+                    msg += " \u26a0\ufe0f"
                 msg += "\n"
 
             await update.message.reply_text(msg)

@@ -17,10 +17,10 @@ async def menu_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def miembros_activos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    members = get_collection("members")
-    payments = get_collection("payments")
+    members = await get_collection("members")
+    payments = await get_collection("payments")
 
-    all_members = list(members.find({"active": True}))
+    all_members = await members.find({"active": True}).to_list(None)
     total = len(all_members)
 
     activos = 0
@@ -28,10 +28,7 @@ async def miembros_activos(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     vencidos = 0
 
     for member in all_members:
-        last_payment = payments.find_one(
-            {"member_id": str(member["_id"])},
-            sort=[("payment_date", -1)]
-        )
+        last_payment = await payments.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
 
         if not last_payment:
             vencidos += 1
@@ -54,35 +51,29 @@ async def miembros_activos(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     msg += f"💀 Vencidos: {vencidos}\n"
 
     if total > 0:
-        msg += f"\n📈 Porcentaje de renovacion: {(activos/total)*100:.1f}%"
+        msg += f"\n📈 Porcentaje de renovacion: {(activos / total) * 100:.1f}%"
 
     await update.message.reply_text(msg)
 
 
 async def ingresos_mes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    payments = get_collection("payments")
+    payments = await get_collection("payments")
 
     hoy = date.today()
     inicio_mes = hoy.replace(day=1)
 
-    mes_actual_payments = list(payments.find({
-        "payment_date": {
-            "$gte": format_fecha(inicio_mes),
-            "$lte": format_fecha(hoy)
-        }
-    }))
+    mes_actual_payments = await payments.find(
+        {"payment_date": {"$gte": format_fecha(inicio_mes), "$lte": format_fecha(hoy)}}
+    ).to_list(None)
 
     monto_actual = sum(p["amount"] for p in mes_actual_payments)
 
-    inicio_mes_pasado = (inicio_mes - relativedelta(months=1))
+    inicio_mes_pasado = inicio_mes - relativedelta(months=1)
     fin_mes_pasado = inicio_mes - relativedelta(days=1)
 
-    mes_pasado_payments = list(payments.find({
-        "payment_date": {
-            "$gte": format_fecha(inicio_mes_pasado),
-            "$lte": format_fecha(fin_mes_pasado)
-        }
-    }))
+    mes_pasado_payments = await payments.find(
+        {"payment_date": {"$gte": format_fecha(inicio_mes_pasado), "$lte": format_fecha(fin_mes_pasado)}}
+    ).to_list(None)
 
     monto_pasado = sum(p["amount"] for p in mes_pasado_payments)
 
@@ -100,12 +91,12 @@ async def ingresos_mes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def vencimientos_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    members = get_collection("members")
-    payments = get_collection("payments")
+    members = await get_collection("members")
+    payments = await get_collection("payments")
 
     hoy = date.today()
 
-    all_members = list(members.find({"active": True}))
+    all_members = await members.find({"active": True}).to_list(None)
 
     hoy_vencen = []
     semana_vencen = []
@@ -115,10 +106,7 @@ async def vencimientos_stats(update: Update, context: ContextTypes.DEFAULT_TYPE)
     fin_mes = hoy + relativedelta(months=1)
 
     for member in all_members:
-        last_payment = payments.find_one(
-            {"member_id": str(member["_id"])},
-            sort=[("payment_date", -1)]
-        )
+        last_payment = await payments.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
 
         if not last_payment:
             continue
@@ -148,6 +136,3 @@ async def vencimientos_stats(update: Update, context: ContextTypes.DEFAULT_TYPE)
         msg += f"  ... y {len(mes_vencen) - 5} mas\n"
 
     await update.message.reply_text(msg)
-
-
-

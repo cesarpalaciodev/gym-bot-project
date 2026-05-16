@@ -8,7 +8,7 @@ from database import get_collection
 logger = logging.getLogger(__name__)
 
 
-def log_action(
+async def log_action(
     telegram_id: int | None,
     username: str | None,
     action: str,
@@ -16,14 +16,16 @@ def log_action(
     member_name: str | None = None,
 ) -> None:
     try:
-        audit = get_collection("audit_log")
-        audit.insert_one({
-            "telegram_id": telegram_id,
-            "username": username,
-            "action": action,
-            "detail": detail,
-            "member_name": member_name,
-            "created_at": datetime.now(UTC),
-        })
+        audit = await get_collection("audit_log")
+        await audit.insert_one(
+            {
+                "telegram_id": telegram_id,
+                "username": username,
+                "action": action,
+                "detail": detail,
+                "member_name": member_name,
+                "created_at": datetime.now(UTC),
+            }
+        )
     except Exception as e:
         logger.error(f"Error logging audit: {e}")

@@ -23,8 +23,8 @@ def require_role(min_role: str) -> Callable[[Callable[..., Awaitable[T]]], Calla
             if not user:
                 return await func(update, context, *args, **kwargs)
 
-            admins = get_collection("admins")
-            admin = admins.find_one({"telegram_id": user.id})
+            admins = await get_collection("admins")
+            admin = await admins.find_one({"telegram_id": user.id})
             if not admin:
                 if update.message:
                     await update.message.reply_text("No autorizado. Solo administradores.")
@@ -38,7 +38,9 @@ def require_role(min_role: str) -> Callable[[Callable[..., Awaitable[T]]], Calla
                 return await func(update, context, *args, **kwargs)
 
             return await func(update, context, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -52,6 +54,7 @@ async def es_admin_grupo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return True
 
     from telegram.error import TelegramError
+
     try:
         member = await context.bot.get_chat_member(chat.id, user.id)
         return member.status in {"creator", "administrator"}

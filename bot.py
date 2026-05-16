@@ -6,13 +6,7 @@ from datetime import time
 
 from telegram import Update
 from telegram.error import TelegramError
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    ContextTypes,
-    MessageHandler,
-    filters,
-)
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from config import TOKEN
 from database import init_collections
@@ -33,9 +27,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def setup_database() -> None:
+async def setup_database() -> None:
     try:
-        init_collections()
+        await init_collections()
     except (ConnectionError, OSError, ValueError) as e:
         logger.error(f"Error inicializando base de datos: {e}")
         raise
@@ -61,6 +55,7 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return
 
     from handlers import export
+
     try:
         await export.exportar_excel_miembros(update, context)
         await update.message.reply_text("Backup completado")
@@ -75,6 +70,7 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     from handlers.admins import _del_state as del_admin_state
     from handlers.members import _del_state as del_member_state
     from handlers.payments import _del_state as del_payment_state
+
     del_member_state(user_id)
     del_payment_state(user_id)
     del_admin_state(user_id)
@@ -85,7 +81,9 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 def main() -> None:
     logger.info("Iniciando bot...")
 
-    setup_database()
+    import asyncio
+
+    asyncio.run(setup_database())
 
     app = Application.builder().token(TOKEN).build()
 

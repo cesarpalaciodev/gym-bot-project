@@ -16,13 +16,13 @@ async def menu_reports(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def deudores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    members = get_collection("members")
-    payments = get_collection("payments")
+    members = await get_collection("members")
+    payments = await get_collection("payments")
 
     hoy = date.today()
     texto = "⚠️ MIEMBROS CON PAGOS VENCIDOS:\n\n"
 
-    all_members = list(members.find({"active": True}))
+    all_members = await members.find({"active": True}).to_list(None)
 
     if not all_members:
         await update.message.reply_text("No hay miembros registrados")
@@ -31,10 +31,7 @@ async def deudores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     deudores_count = 0
 
     for member in all_members:
-        last_payment = payments.find_one(
-            {"member_id": str(member["_id"])},
-            sort=[("payment_date", -1)]
-        )
+        last_payment = await payments.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
 
         if not last_payment:
             continue
@@ -73,8 +70,8 @@ async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     from config import EXCEL_FILE
 
-    members = get_collection("members")
-    payments = get_collection("payments")
+    members = await get_collection("members")
+    payments = await get_collection("payments")
 
     os.makedirs("reports", exist_ok=True)
 
@@ -90,13 +87,10 @@ async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     hoy = date.today()
 
-    all_members = list(members.find({"active": True}))
+    all_members = await members.find({"active": True}).to_list(None)
 
     for member in all_members:
-        last_payment = payments.find_one(
-            {"member_id": str(member["_id"])},
-            sort=[("payment_date", -1)]
-        )
+        last_payment = await payments.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
 
         if last_payment:
             vencimiento = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
@@ -119,15 +113,17 @@ async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 dias_display = dias_vencido
                 fill = rojo
 
-            ws.append([
-                member["name"],
-                member["created_at"].strftime("%Y-%m-%d"),
-                last_payment["payment_date"],
-                last_payment["due_date"],
-                last_payment["plan"],
-                dias_display,
-                estado,
-            ])
+            ws.append(
+                [
+                    member["name"],
+                    member["created_at"].strftime("%Y-%m-%d"),
+                    last_payment["payment_date"],
+                    last_payment["due_date"],
+                    last_payment["plan"],
+                    dias_display,
+                    estado,
+                ]
+            )
 
             fila = ws.max_row
             ws[f"G{fila}"].fill = fill
@@ -135,7 +131,4 @@ async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     wb.save(EXCEL_FILE)
 
     with open(EXCEL_FILE, "rb") as f:
-        await update.message.reply_document(
-            f,
-            filename="reporte_miembros.xlsx"
-        )
+        await update.message.reply_document(f, filename="reporte_miembros.xlsx")

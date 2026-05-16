@@ -15,12 +15,12 @@ async def notificacion_5am(context: ContextTypes.DEFAULT_TYPE) -> None:
         logger.warning("GROUP_ID no configurado")
         return
 
-    members = get_collection("members")
-    payments = get_collection("payments")
+    members = await get_collection("members")
+    payments = await get_collection("payments")
 
     hoy = date.today()
 
-    all_members = list(members.find({"active": True}))
+    all_members = await members.find({"active": True}).to_list(None)
 
     texto = "🔔 RECORDATORIO MATUTINO\n\n"
     texto += f"📅 Fecha: {hoy.strftime('%Y-%m-%d')}\n\n"
@@ -31,10 +31,7 @@ async def notificacion_5am(context: ContextTypes.DEFAULT_TYPE) -> None:
     vencidos = []
 
     for member in all_members:
-        last_payment = payments.find_one(
-            {"member_id": str(member["_id"])},
-            sort=[("payment_date", -1)]
-        )
+        last_payment = await payments.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
 
         if not last_payment:
             vencidos.append((member["name"], 0))
@@ -77,10 +74,7 @@ async def notificacion_5am(context: ContextTypes.DEFAULT_TYPE) -> None:
         texto = "✅ No hay miembros registrados\n"
 
     try:
-        await context.bot.send_message(
-            chat_id=GROUP_ID,
-            text=texto
-        )
+        await context.bot.send_message(chat_id=GROUP_ID, text=texto)
         logger.info("Notificacion 5AM enviada al grupo")
     except Exception as e:
         logger.error(f"Error enviando notificacion: {e}")

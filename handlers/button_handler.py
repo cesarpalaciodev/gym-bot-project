@@ -82,8 +82,8 @@ async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await export.exportar_txt_resumen(update, context)
     elif texto == "⚙️ Administración":
         if user_id:
-            admins_col = get_collection("admins")
-            admin = admins_col.find_one({"telegram_id": user_id})
+            admins_col = await get_collection("admins")
+            admin = await admins_col.find_one({"telegram_id": user_id})
             if admin and admin.get("role") == "super_admin":
                 await admins.menu_admins(update, context)
             else:

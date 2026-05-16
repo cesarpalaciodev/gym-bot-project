@@ -168,7 +168,7 @@ gym_bot_project/
 │   └── cache.py            # LRU cache for plans & config
 │
 ├── keyboards.py            # All reply keyboard definitions
-├── tests/                  # Test suite (87+ tests)
+├── tests/                  # Test suite (288 tests, 87% coverage)
 │
 ├── requirements.txt
 ├── pyproject.toml           # Build config + tool settings
@@ -248,20 +248,38 @@ Three GitHub Actions workflows:
 
 ## Testing
 
-87+ tests covering:
+**288 tests** with **87% code coverage** across the entire project:
 
-- **Date logic** — Due date calc, grace period, timeouts
-- **Models** — Member, Payment, Admin serialization
-- **Configuration** — Plans, grace days, admin roles
-- **Keyboards** — Menu structure, button presence
-- **Cache** — LRU cache hits, invalidation
-- **Auth** — Role hierarchy
-- **Database** — Connection, error handling
-- **Integration** — Payment flow logic end-to-end
+| Module | Coverage | Tests |
+|--------|----------|-------|
+| `handlers/members.py` | 96% | 31 |
+| `handlers/payments.py` | 97% | 27 |
+| `handlers/stats.py` | 100% | 22 |
+| `handlers/button_handler.py` | 100% | 37 |
+| `handlers/reports.py` | 100% | 16 |
+| `handlers/export.py` | 100% | 17 |
+| `handlers/admins.py` | 100% | 26 |
+| `handlers/notifications.py` | 100% | 11 |
+| `handlers/start.py` | 100% | 15 |
+| `utils/dates.py` | 89% | 22 |
+| `config.py` | 100% | 14 |
+| `keyboards.py` | 100% | 10 |
+| `models/` | 95%+ | 14 |
+| `utils/cache.py` | 100% | 7 |
+
+### Test categories
+
+- **Unit tests** — Models, config, cache, keyboards, auth, dates
+- **Handler tests** — All 9 handler files with mocked Telegram API
+- **Integration** — Payment flow logic, end-to-end scenarios
+- **Database** — Connection, error handling, collection access
+
+### Running tests
 
 ```bash
-make test       # All tests + coverage
-make test-integration  # Integration tests only (needs MongoDB)
+make test              # All tests + coverage report
+make test-integration  # Integration tests (needs MongoDB)
+pytest tests/test_members.py -v  # Single file
 ```
 
 ---

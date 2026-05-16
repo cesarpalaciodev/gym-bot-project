@@ -23,8 +23,8 @@ async def exportar_excel_miembros(update: Update, context: ContextTypes.DEFAULT_
 
     os.makedirs(REPORTS_DIR, exist_ok=True)
 
-    members = get_collection("members")
-    payments = get_collection("payments")
+    members = await get_collection("members")
+    payments = await get_collection("payments")
 
     wb = Workbook()
     ws = wb.active
@@ -34,13 +34,10 @@ async def exportar_excel_miembros(update: Update, context: ContextTypes.DEFAULT_
 
     hoy = date.today()
 
-    all_members = list(members.find({"active": True}))
+    all_members = await members.find({"active": True}).to_list(None)
 
     for member in all_members:
-        last_payment = payments.find_one(
-            {"member_id": str(member["_id"])},
-            sort=[("payment_date", -1)]
-        )
+        last_payment = await payments.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
 
         estado = "Activo"
         ult_pago = ""
@@ -56,23 +53,22 @@ async def exportar_excel_miembros(update: Update, context: ContextTypes.DEFAULT_
             if hoy > vencimiento_dt:
                 estado = "Vencido"
 
-        ws.append([
-            member["name"],
-            member["created_at"].strftime("%Y-%m-%d"),
-            member.get("phone", ""),
-            estado,
-            ult_pago,
-            vence,
-            plan,
-        ])
+        ws.append(
+            [
+                member["name"],
+                member["created_at"].strftime("%Y-%m-%d"),
+                member.get("phone", ""),
+                estado,
+                ult_pago,
+                vence,
+                plan,
+            ]
+        )
 
     wb.save(EXCEL_FILE)
 
     with open(EXCEL_FILE, "rb") as f:
-        await update.message.reply_document(
-            f,
-            filename="miembros_export.xlsx"
-        )
+        await update.message.reply_document(f, filename="miembros_export.xlsx")
 
 
 async def exportar_excel_pagos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -82,7 +78,7 @@ async def exportar_excel_pagos(update: Update, context: ContextTypes.DEFAULT_TYP
 
     os.makedirs(REPORTS_DIR, exist_ok=True)
 
-    payments = get_collection("payments")
+    payments = await get_collection("payments")
 
     wb = Workbook()
     ws = wb.active
@@ -90,52 +86,45 @@ async def exportar_excel_pagos(update: Update, context: ContextTypes.DEFAULT_TYP
 
     ws.append(["Miembro", "Fecha Pago", "Monto", "Plan", "Vence", "Gracia"])
 
-    all_payments = list(payments.find({}).sort("payment_date", -1))
+    all_payments = await payments.find({}).sort("payment_date", -1).to_list(None)
 
     for p in all_payments:
-        ws.append([
-            p["member_name"],
-            p["payment_date"],
-            p["amount"],
-            p["plan"],
-            p["due_date"],
-            "Si" if p.get("grace_period") else "No",
-        ])
+        ws.append(
+            [
+                p["member_name"],
+                p["payment_date"],
+                p["amount"],
+                p["plan"],
+                p["due_date"],
+                "Si" if p.get("grace_period") else "No",
+            ]
+        )
 
     wb.save(EXCEL_FILE)
 
     with open(EXCEL_FILE, "rb") as f:
-        await update.message.reply_document(
-            f,
-            filename="pagos_export.xlsx"
-        )
+        await update.message.reply_document(f, filename="pagos_export.xlsx")
 
 
 async def exportar_txt_resumen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     from config import REPORTS_DIR
 
-    members = get_collection("members")
-    payments = get_collection("payments")
+    members = await get_collection("members")
+    payments = await get_collection("payments")
 
     hoy = date.today()
 
-    all_members = list(members.find({"active": True}))
+    all_members = await members.find({"active": True}).to_list(None)
 
-    mes_actual = list(payments.find({
-        "payment_date": {
-            "$gte": hoy.replace(day=1).strftime("%Y-%m-%d"),
-            "$lte": hoy.strftime("%Y-%m-%d")
-        }
-    }))
+    mes_actual = await payments.find(
+        {"payment_date": {"$gte": hoy.replace(day=1).strftime("%Y-%m-%d"), "$lte": hoy.strftime("%Y-%m-%d")}}
+    ).to_list(None)
 
     monto_mes = sum(p["amount"] for p in mes_actual)
 
     vencidos_hoy = 0
     for member in all_members:
-        last = payments.find_one(
-            {"member_id": str(member["_id"])},
-            sort=[("payment_date", -1)]
-        )
+        last = await payments.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
         if last:
             vence = datetime.strptime(last["due_date"], "%Y-%m-%d").date()
             if vence == hoy:
@@ -143,7 +132,7 @@ async def exportar_txt_resumen(update: Update, context: ContextTypes.DEFAULT_TYP
 
     contenido = f"""
 =======================================
-       RESUMEN GYM - {hoy.strftime('%Y-%m-%d')}
+       RESUMEN GYM - {hoy.strftime("%Y-%m-%d")}
 =======================================
 
 👥 MIEMBROS
@@ -167,17 +156,14 @@ async def exportar_txt_resumen(update: Update, context: ContextTypes.DEFAULT_TYP
         f.write(contenido)
 
     with open(filename, "rb") as f:
-        await update.message.reply_document(
-            f,
-            filename=f"resumen_{hoy.strftime('%Y%m%d')}.txt"
-        )
+        await update.message.reply_document(f, filename=f"resumen_{hoy.strftime('%Y%m%d')}.txt")
 
 
 async def exportar_csv_miembros(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     from config import REPORTS_DIR
 
-    members = get_collection("members")
-    payments = get_collection("payments")
+    members = await get_collection("members")
+    payments = await get_collection("payments")
 
     os.makedirs(REPORTS_DIR, exist_ok=True)
     filename = f"{REPORTS_DIR}/miembros.csv"
@@ -186,14 +172,11 @@ async def exportar_csv_miembros(update: Update, context: ContextTypes.DEFAULT_TY
         writer = csv.writer(f)
         writer.writerow(["Nombre", "Fecha Registro", "Telefono", "Estado", "Ultimo Pago", "Vence"])
 
-        all_members = list(members.find({"active": True}))
+        all_members = await members.find({"active": True}).to_list(None)
         hoy = date.today()
 
         for member in all_members:
-            last = payments.find_one(
-                {"member_id": str(member["_id"])},
-                sort=[("payment_date", -1)]
-            )
+            last = await payments.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
 
             estado = "Activo"
             ult_pago = ""
@@ -205,17 +188,16 @@ async def exportar_csv_miembros(update: Update, context: ContextTypes.DEFAULT_TY
                 if hoy > datetime.strptime(vence, "%Y-%m-%d").date():
                     estado = "Vencido"
 
-            writer.writerow([
-                member["name"],
-                member["created_at"].strftime("%Y-%m-%d"),
-                member.get("phone", ""),
-                estado,
-                ult_pago,
-                vence,
-            ])
+            writer.writerow(
+                [
+                    member["name"],
+                    member["created_at"].strftime("%Y-%m-%d"),
+                    member.get("phone", ""),
+                    estado,
+                    ult_pago,
+                    vence,
+                ]
+            )
 
     with open(filename, "rb") as f:
-        await update.message.reply_document(
-            f,
-            filename="miembros.csv"
-        )
+        await update.message.reply_document(f, filename="miembros.csv")
