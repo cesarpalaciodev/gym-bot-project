@@ -342,8 +342,8 @@ MIT © Cesar Palacio
 ## Support
 
 - Issues: [GitHub Issues](https://github.com/cesarpalaciodev/gym-bot-project/issues)
-- Email: gymbot@example.com
-- Discord: [Support Server](https://discord.gg/example)
+- Email: cesarpalaciodev@gmail.com
+  
 
 ---
 
