@@ -13,7 +13,8 @@ GROUP_ID = os.getenv("GROUP_ID", "")
 MONGO_URI = os.getenv("MONGO_URI", "")
 SENTRY_DSN = os.getenv("SENTRY_DSN", "")
 REDIS_URL = os.getenv("REDIS_URL", "")
-DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "3000"))
+ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
+DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "4000"))
 
 DATA_DIR = "data"
 BACKUP_DIR = "backup"

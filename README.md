@@ -5,7 +5,7 @@ A production-grade Telegram bot for managing gym members, payments, and expirati
 [![Test](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/test.yml/badge.svg)](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/test.yml)
 [![Security](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/security.yml/badge.svg)](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/security.yml)
 [![codecov](https://codecov.io/gh/cesarpalaciodev/gym-bot-project/branch/main/graph/badge.svg)](https://codecov.io/gh/cesarpalaciodev/gym-bot-project)
-[![Dashboard](https://img.shields.io/badge/dashboard-FastAPI-009688)](http://localhost:8000)
+[![Dashboard](https://img.shields.io/badge/dashboard-FastAPI-009688)](http://localhost:4000)
 
 ---
 
@@ -24,7 +24,7 @@ A production-grade Telegram bot for managing gym members, payments, and expirati
 - **Rate limiting** — Redis-backed (with in-memory fallback), persists across restarts
 - **State expiration** — In-progress flows auto-expire after 10 minutes
 - **Sentry error tracking** — Production error monitoring with stack traces
-- **Web dashboard** — FastAPI dashboard at `http://localhost:3000` with live stats
+- **Web dashboard** — FastAPI dashboard at `http://localhost:4000` with login, stats, members & payments HTML pages, and live API endpoints
 
 ---
 
@@ -87,7 +87,7 @@ MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/gym
 GROUP_ID=-1001234567890
 SENTRY_DSN=https://key@o1.ingest.sentry.io/123   # Optional: error tracking
 REDIS_URL=redis://localhost:6379/0                  # Optional: persistent rate limiting
-DASHBOARD_PORT=3000                                 # Optional: web dashboard port
+DASHBOARD_PORT=4000                                 # Optional: web dashboard port
 ```
 
 ### Run
@@ -173,6 +173,12 @@ gym_bot_project/
 │   ├── audit.py            # Action audit logging
 │   └── cache.py            # LRU cache for plans & config
 │
+├── dashboard/
+│   ├── server.py            # FastAPI app with auth & routes
+│   ├── auth.py              # Session-based login via chat_id
+│   ├── static/              # Static assets (CSS)
+│   └── templates/           # Jinja2 HTML templates
+│
 ├── keyboards.py            # All reply keyboard definitions
 ├── tests/                  # Test suite (288 tests, 87% coverage)
 │
@@ -184,6 +190,27 @@ gym_bot_project/
 ├── .pre-commit-config.yaml # Pre-commit hooks
 └── render.yaml             # Render deploy config
 ```
+
+---
+
+## Web Dashboard
+
+The project includes a FastAPI web dashboard at `http://localhost:4000` with:
+
+| Route | Description |
+|-------|-------------|
+| `/` | Protected dashboard with overview (active, grace, overdue, income) |
+| `/login` | Login via Telegram chat ID (`ADMIN_ID` env var or MongoDB admin) |
+| `/dashboard/stats` | Live stats (active members, income, change %) |
+| `/dashboard/members` | Active members table with status and due dates |
+| `/dashboard/payments` | Payment history with pagination |
+| `/dashboard/health` | System health status page |
+| `/api/stats` | Stats JSON endpoint (public) |
+| `/api/members` | Members JSON endpoint (public) |
+| `/api/payments` | Payments JSON endpoint (public) |
+| `/health` | Health check JSON endpoint (public) |
+
+Auth uses signed cookies with 7-day sessions. The `ADMIN_ID` env var grants access; MongoDB admins also work.
 
 ---
 

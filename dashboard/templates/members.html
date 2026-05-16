@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Members{% endblock %}
+
+{% block content %}
+<div class="bg-gray-900/60 rounded-2xl border border-gray-800 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Active Members</h2>
+        <span class="text-sm text-gray-400">{{ members|length }} total</span>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-left text-gray-400 text-xs uppercase tracking-wider border-b border-gray-800">
+                    <th class="px-6 py-3 font-medium">Name</th>
+                    <th class="px-6 py-3 font-medium">Phone</th>
+                    <th class="px-6 py-3 font-medium">Status</th>
+                    <th class="px-6 py-3 font-medium">Due Date</th>
+                    <th class="px-6 py-3 font-medium">Days Overdue</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in members %}
+                <tr class="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors">
+                    <td class="px-6 py-3 font-medium text-gray-200">{{ m.name }}</td>
+                    <td class="px-6 py-3 text-gray-400">{{ m.phone or '--' }}</td>
+                    <td class="px-6 py-3">
+                        {% if m.status == 'al_dia' %}
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400">Al d&iacute;a</span>
+                        {% elif m.status == 'gracia' %}
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400">Gracia</span>
+                        {% elif m.status == 'vencido' %}
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400">Vencido</span>
+                        {% else %}
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-400">Sin pago</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-3 text-gray-400">{{ m.due_date or '--' }}</td>
+                    <td class="px-6 py-3">
+                        {% if m.days_overdue > 0 %}
+                        <span class="text-red-400 font-mono">{{ m.days_overdue }}d</span>
+                        {% else %}
+                        <span class="text-gray-500">0</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">No active members.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

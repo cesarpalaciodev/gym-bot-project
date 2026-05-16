@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Stats{% endblock %}
+
+{% block head %}
+<script>
+async function loadStats() {
+    try {
+        const resp = await fetch('/api/stats');
+        const data = await resp.json();
+        document.getElementById('active-members').textContent = data.active_members;
+        document.getElementById('in-grace').textContent = data.in_grace;
+        document.getElementById('overdue').textContent = data.overdue;
+        document.getElementById('monthly-income').textContent = '$' + Number(data.monthly_income).toLocaleString();
+        document.getElementById('prev-income').textContent = '$' + Number(data.previous_month_income).toLocaleString();
+        const changeEl = document.getElementById('income-change');
+        const pct = data.income_change_pct;
+        changeEl.textContent = (pct >= 0 ? '+' : '') + pct + '%';
+        changeEl.className = pct >= 0 ? 'text-emerald-400' : 'text-red-400';
+    } catch (e) {
+        document.getElementById('error-msg').classList.remove('hidden');
+    }
+}
+document.addEventListener('DOMContentLoaded', loadStats);
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+    <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border border-gray-700/50 shadow-lg">
+        <span class="text-xs font-semibold uppercase tracking-widest text-gray-400">Active Members</span>
+        <p class="text-4xl font-bold text-white mt-2" id="active-members">--</p>
+    </div>
+    <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border border-amber-500/20 shadow-lg">
+        <span class="text-xs font-semibold uppercase tracking-widest text-gray-400">In Grace</span>
+        <p class="text-4xl font-bold text-amber-400 mt-2" id="in-grace">--</p>
+    </div>
+    <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border border-red-500/20 shadow-lg">
+        <span class="text-xs font-semibold uppercase tracking-widest text-gray-400">Overdue</span>
+        <p class="text-4xl font-bold text-red-400 mt-2" id="overdue">--</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
+    <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border border-emerald-500/20 shadow-lg">
+        <span class="text-xs font-semibold uppercase tracking-widest text-gray-400">Monthly Income</span>
+        <p class="text-4xl font-bold text-emerald-400 mt-2" id="monthly-income">--</p>
+    </div>
+    <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border border-gray-700/50 shadow-lg">
+        <span class="text-xs font-semibold uppercase tracking-widest text-gray-400">Previous Month</span>
+        <p class="text-3xl font-bold text-gray-300 mt-2" id="prev-income">--</p>
+        <p class="text-sm mt-1">
+            Change: <span id="income-change">--</span>
+        </p>
+    </div>
+</div>
+
+<div id="error-msg" class="hidden bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
+    Error loading stats.
+</div>
+{% endblock %}

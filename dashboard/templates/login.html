@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center">
+    <div class="bg-gray-900/60 rounded-2xl border border-gray-800 p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+            <span class="text-5xl">🏋️</span>
+            <h1 class="text-2xl font-bold mt-4">Gym Dashboard</h1>
+            <p class="text-gray-400 mt-1 text-sm">Ingresa tu Chat ID de Telegram</p>
+        </div>
+
+        {% if error %}
+        <div class="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-6 text-red-400 text-sm">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/login" class="space-y-5">
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1.5" for="chat_id">Chat ID</label>
+                <input
+                    type="text"
+                    name="chat_id"
+                    id="chat_id"
+                    required
+                    placeholder="Ej: 123456789"
+                    class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-colors"
+                >
+            </div>
+            <button
+                type="submit"
+                class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl transition-colors"
+            >
+                Ingresar
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

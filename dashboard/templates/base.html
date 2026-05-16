@@ -17,11 +17,15 @@
                     <span class="font-bold text-lg tracking-tight">Gym Dashboard</span>
                 </div>
                 <div class="flex items-center gap-6 text-sm">
-                    <a href="/" class="text-gray-300 hover:text-white transition-colors {% if request.url.path == '/' %}text-cyan-400 font-semibold{% endif %}">Dashboard</a>
-                    <a href="/api/stats" class="text-gray-400 hover:text-white transition-colors">API Stats</a>
-                    <a href="/api/members" class="text-gray-400 hover:text-white transition-colors">API Members</a>
-                    <a href="/api/payments" class="text-gray-400 hover:text-white transition-colors">API Payments</a>
-                    <a href="/health" class="text-gray-400 hover:text-white transition-colors">Health</a>
+                    <a href="/" class="text-gray-300 hover:text-white transition-colors">Dashboard</a>
+                    <a href="/dashboard/stats" class="text-gray-400 hover:text-white transition-colors">Stats</a>
+                    <a href="/dashboard/members" class="text-gray-400 hover:text-white transition-colors">Members</a>
+                    <a href="/dashboard/payments" class="text-gray-400 hover:text-white transition-colors">Payments</a>
+                    <a href="/dashboard/health" class="text-gray-400 hover:text-white transition-colors">Health</a>
+                    {% if admin %}
+                    <span class="text-gray-500 text-xs ml-4">Chat: {{ admin.chat_id }}</span>
+                    <a href="/logout" class="text-gray-500 hover:text-red-400 transition-colors text-xs">Salir</a>
+                    {% endif %}
                 </div>
             </div>
         </div>

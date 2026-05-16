@@ -1,16 +1,16 @@
-"""FastAPI dashboard for Gym Bot."""
-
 from __future__ import annotations
 
 import logging
 from datetime import date, datetime
 
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Form, Query, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from config import DASHBOARD_PORT
 from database import get_collection
+from dashboard.auth import COOKIE_NAME, _verify_admin, create_session, get_current_admin
 from utils.dates import calcular_dias_vencido, format_fecha
 
 logger = logging.getLogger(__name__)
@@ -45,8 +45,43 @@ async def _get_member_status(
     return {"status": s, "due_date": latest["due_date"], "days_overdue": days}
 
 
-@app.get("/")
-async def index(request: Request):
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    admin = await get_current_admin(request)
+    if admin:
+        return RedirectResponse(url="/", status_code=303)
+    return templates.TemplateResponse(request, "login.html", {})
+
+
+@app.post("/login")
+async def login_post(request: Request, chat_id: int = Form(...)):
+    admin = await _verify_admin(chat_id)
+    if not admin:
+        return templates.TemplateResponse(
+            request,
+            "login.html",
+            {"error": "Chat ID no autorizado"},
+        )
+    token = create_session(chat_id)
+    resp = RedirectResponse(url="/", status_code=303)
+    resp.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        max_age=86400 * 7,
+        httponly=True,
+        samesite="lax",
+    )
+    return resp
+
+
+@app.get("/logout")
+async def logout():
+    resp = RedirectResponse(url="/login", status_code=303)
+    resp.delete_cookie(COOKIE_NAME)
+    return resp
+
+
+async def _get_dashboard_data():
     members_col = await get_collection("members")
     payments_col = await get_collection("payments")
 
@@ -76,15 +111,82 @@ async def index(request: Request):
 
     recent = await payments_col.find().sort("payment_date", -1).limit(10).to_list(length=10)
 
+    return {
+        "total_active": total_active,
+        "in_grace": in_grace,
+        "overdue": overdue,
+        "monthly_income": monthly_income,
+        "recent_payments": [
+            {
+                "member_name": p.get("member_name", ""),
+                "amount": p.get("amount", 0),
+                "payment_date": p.get("payment_date", ""),
+                "plan": p.get("plan", ""),
+                "due_date": p.get("due_date", ""),
+            }
+            for p in recent
+        ],
+    }
+
+
+@app.get("/")
+async def index(request: Request):
+    admin = await get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/login", status_code=303)
+    data = await _get_dashboard_data()
+    return templates.TemplateResponse(request, "index.html", {"admin": admin, **data})
+
+
+@app.get("/dashboard/stats")
+async def stats_page(request: Request):
+    admin = await get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/login", status_code=303)
+    return templates.TemplateResponse(request, "stats.html", {"admin": admin})
+
+
+@app.get("/dashboard/members")
+async def members_page(request: Request):
+    admin = await get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/login", status_code=303)
+    members_col = await get_collection("members")
+    payments_col = await get_collection("payments")
+    active = await members_col.find({"active": True}).to_list(length=None)
+    result = []
+    for m in active:
+        info = await _get_member_status(m, payments_col)
+        result.append(
+            {
+                "id": str(m["_id"]),
+                "name": m.get("name", ""),
+                "phone": m.get("phone"),
+                "status": info["status"],
+                "due_date": info["due_date"],
+                "days_overdue": info["days_overdue"],
+            }
+        )
+    return templates.TemplateResponse(request, "members.html", {"admin": admin, "members": result})
+
+
+@app.get("/dashboard/payments")
+async def payments_page(request: Request, page: int = Query(1, ge=1)):
+    admin = await get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/login", status_code=303)
+    payments_col = await get_collection("payments")
+    limit = 20
+    skip = (page - 1) * limit
+    total = await payments_col.count_documents({})
+    cur = payments_col.find().sort("payment_date", -1).skip(skip).limit(limit)
+    payments = await cur.to_list(length=limit)
     return templates.TemplateResponse(
-        "index.html",
+        request,
+        "payments.html",
         {
-            "request": request,
-            "total_active": total_active,
-            "in_grace": in_grace,
-            "overdue": overdue,
-            "monthly_income": monthly_income,
-            "recent_payments": [
+            "admin": admin,
+            "payments": [
                 {
                     "member_name": p.get("member_name", ""),
                     "amount": p.get("amount", 0),
@@ -92,8 +194,11 @@ async def index(request: Request):
                     "plan": p.get("plan", ""),
                     "due_date": p.get("due_date", ""),
                 }
-                for p in recent
+                for p in payments
             ],
+            "page": page,
+            "total": total,
+            "pages": (total + limit - 1) // limit,
         },
     )
 
@@ -210,6 +315,24 @@ async def api_payments(limit: int = Query(20, ge=1, le=100), page: int = Query(1
             for p in payments
         ],
     }
+
+
+@app.get("/dashboard/health")
+async def health_page(request: Request):
+    admin = await get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/login", status_code=303)
+    try:
+        db = await get_collection("members")
+        await db.find_one({}, {"_id": 1})
+        db_status = "connected"
+    except Exception:
+        db_status = "disconnected"
+    return templates.TemplateResponse(
+        request,
+        "health.html",
+        {"admin": admin, "db_status": db_status},
+    )
 
 
 @app.get("/health")
