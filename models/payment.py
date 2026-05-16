@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -15,8 +18,8 @@ class Payment:
     created_at: datetime = field(default_factory=datetime.utcnow)
     _id: str | None = None
 
-    def to_dict(self) -> dict:
-        data = {
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
             "member_id": self.member_id,
             "member_name": self.member_name,
             "payment_date": self.payment_date,
@@ -32,7 +35,7 @@ class Payment:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Payment":
+    def from_dict(cls, data: dict[str, Any]) -> Payment:
         return cls(
             _id=str(data.get("_id")),
             member_id=data.get("member_id", ""),

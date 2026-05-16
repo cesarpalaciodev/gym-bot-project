@@ -15,11 +15,18 @@ from handlers.members import (
     user_state,
 )
 from keyboards import menu_miembros
+from services import reset_services
 
 
 @pytest.fixture(autouse=True)
-def _patch_handler_get_collection(mock_collection):
-    with patch("handlers.members.get_collection", AsyncMock(return_value=mock_collection)):
+def _reset_services():
+    reset_services()
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _patch_factory_get_collection(mock_collection):
+    with patch("services.factory.get_collection", AsyncMock(return_value=mock_collection)):
         yield
 
 

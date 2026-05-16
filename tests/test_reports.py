@@ -4,17 +4,34 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 import pytest
 
 from handlers import reports
+from services import reset_services
 
 
 @pytest.fixture(autouse=True)
-def _patch_reports_collection(mock_collection):
-    with patch("handlers.reports.get_collection", return_value=mock_collection):
+def _reset_services():
+    reset_services()
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _patch_factory_get_collection(mock_collection):
+    with patch("services.factory.get_collection", AsyncMock(return_value=mock_collection)):
         yield
 
 
 @pytest.fixture(autouse=True)
+def fixed_today():
+    today = date(2026, 5, 15)
+    with patch("services.report_service.date") as mock_date:
+        mock_date.today.return_value = today
+        with patch("utils.dates.date") as mock_utils_date:
+            mock_utils_date.today.return_value = today
+            yield today
+
+
+@pytest.fixture(autouse=True)
 def _patch_os_makedirs():
-    with patch("os.makedirs"):
+    with patch("services.report_service.os.makedirs"):
         yield
 
 
@@ -31,13 +48,13 @@ def _patch_workbook():
     mock_ws = MagicMock()
     mock_wb.active = mock_ws
     mock_wb.max_row = 1
-    with patch("openpyxl.Workbook", return_value=mock_wb) as m:
+    with patch("services.report_service.Workbook", return_value=mock_wb) as m:
         yield m, mock_wb, mock_ws
 
 
 @pytest.fixture(autouse=True)
 def _patch_pattern_fill():
-    with patch("openpyxl.styles.PatternFill") as m:
+    with patch("services.report_service.PatternFill") as m:
         yield m
 
 
@@ -65,7 +82,7 @@ class TestDeudores:
         }
         mock_collection.find.return_value.to_list = AsyncMock(return_value=member_data)
         mock_collection.find_one.return_value = payment_data
-        with patch("handlers.reports.calcular_dias_vencido", return_value=0):
+        with patch("services.report_service.calcular_dias_vencido", return_value=0):
             await reports.deudores(mock_update, mock_context)
         mock_update.message.reply_text.assert_called_once_with("\u2705 Todos los miembros estan al dia")
 
@@ -79,7 +96,7 @@ class TestDeudores:
         }
         mock_collection.find.return_value.to_list = AsyncMock(return_value=member_data)
         mock_collection.find_one.return_value = payment_data
-        with patch("handlers.reports.calcular_dias_vencido", return_value=0):
+        with patch("services.report_service.calcular_dias_vencido", return_value=0):
             await reports.deudores(mock_update, mock_context)
         mock_update.message.reply_text.assert_called_once()
         text = mock_update.message.reply_text.call_args[0][0]
@@ -96,7 +113,7 @@ class TestDeudores:
         }
         mock_collection.find.return_value.to_list = AsyncMock(return_value=member_data)
         mock_collection.find_one.return_value = payment_data
-        with patch("handlers.reports.calcular_dias_vencido", return_value=3):
+        with patch("services.report_service.calcular_dias_vencido", return_value=3):
             await reports.deudores(mock_update, mock_context)
         mock_update.message.reply_text.assert_called_once()
         text = mock_update.message.reply_text.call_args[0][0]
@@ -113,7 +130,7 @@ class TestDeudores:
         }
         mock_collection.find.return_value.to_list = AsyncMock(return_value=member_data)
         mock_collection.find_one.return_value = payment_data
-        with patch("handlers.reports.calcular_dias_vencido", return_value=15):
+        with patch("services.report_service.calcular_dias_vencido", return_value=15):
             await reports.deudores(mock_update, mock_context)
         mock_update.message.reply_text.assert_called_once()
         text = mock_update.message.reply_text.call_args[0][0]
@@ -132,7 +149,7 @@ class TestDeudores:
             {"payment_date": "2026-04-10", "due_date": "2026-04-10"},
             {"payment_date": "2026-03-01", "due_date": "2026-03-01"},
         ]
-        with patch("handlers.reports.calcular_dias_vencido", side_effect=[0, 2, 15]):
+        with patch("services.report_service.calcular_dias_vencido", side_effect=[0, 2, 15]):
             await reports.deudores(mock_update, mock_context)
         mock_update.message.reply_text.assert_called_once()
         text = mock_update.message.reply_text.call_args[0][0]
@@ -187,8 +204,7 @@ class TestExcelReporte:
     async def test_due_today_excel(
         self, mock_update, mock_context, mock_collection, _patch_workbook, _patch_pattern_fill
     ):
-        hoy = date.today()
-        hoy_str = hoy.strftime("%Y-%m-%d")
+        hoy_str = "2026-05-15"
         member_data = [
             {
                 "_id": "2",
@@ -211,7 +227,7 @@ class TestExcelReporte:
     async def test_in_grace_excel(
         self, mock_update, mock_context, mock_collection, _patch_workbook, _patch_pattern_fill
     ):
-        grace_date = (date.today() - timedelta(days=3)).strftime("%Y-%m-%d")
+        grace_date = "2026-05-12"
         member_data = [
             {
                 "_id": "3",
@@ -234,7 +250,7 @@ class TestExcelReporte:
     async def test_overdue_excel(
         self, mock_update, mock_context, mock_collection, _patch_workbook, _patch_pattern_fill
     ):
-        overdue_date = (date.today() - timedelta(days=10)).strftime("%Y-%m-%d")
+        overdue_date = "2026-05-05"
         member_data = [
             {
                 "_id": "4",

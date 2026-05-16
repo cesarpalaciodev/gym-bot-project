@@ -4,11 +4,18 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 import pytest
 
 from handlers import export
+from services import reset_services
+
+
+@pytest.fixture(autouse=True)
+def _reset_services():
+    reset_services()
+    yield
 
 
 @pytest.fixture(autouse=True)
 def _patch_export_collection(mock_collection):
-    with patch("handlers.export.get_collection", return_value=mock_collection):
+    with patch("services.factory.get_collection", AsyncMock(return_value=mock_collection)):
         yield
 
 
@@ -70,8 +77,8 @@ class TestExportarExcelMiembros:
             }
         ]
         payment_data = {
-            "payment_date": "2026-04-15",
-            "due_date": "2026-05-15",
+            "payment_date": "2026-05-01",
+            "due_date": "2026-06-01",
             "plan": "Mensual",
         }
         mock_collection.find.return_value.to_list = AsyncMock(return_value=member_data)
@@ -79,7 +86,7 @@ class TestExportarExcelMiembros:
         _, mock_wb, mock_ws = _patch_workbook
         await export.exportar_excel_miembros(mock_update, mock_context)
         mock_ws.append.assert_any_call(
-            ["Juan Perez", "2026-03-01", "555-0100", "Activo", "2026-04-15", "2026-05-15", "Mensual"]
+            ["Juan Perez", "2026-03-01", "555-0100", "Activo", "2026-05-01", "2026-06-01", "Mensual"]
         )
 
     async def test_with_overdue_member(self, mock_update, mock_context, mock_collection, _patch_workbook):

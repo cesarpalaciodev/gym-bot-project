@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -11,8 +14,8 @@ class Member:
     updated_at: datetime = field(default_factory=datetime.utcnow)
     _id: str | None = None
 
-    def to_dict(self) -> dict:
-        data = {
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
             "name": self.name,
             "phone": self.phone,
             "active": self.active,
@@ -24,7 +27,7 @@ class Member:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Member":
+    def from_dict(cls, data: dict[str, Any]) -> Member:
         return cls(
             _id=str(data.get("_id")),
             name=data.get("name", ""),

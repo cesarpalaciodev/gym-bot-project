@@ -1,26 +1,23 @@
+from __future__ import annotations
+
 import logging
 import time
-from datetime import date, datetime
+from typing import Any
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from config import PLANS
-from database import get_collection
 from keyboards import menu_confirmar, menu_pagos, menu_planes, menu_principal
-from utils import (
-    calcular_dias_vencido,
-    calcular_due_date,
-    format_fecha,
-)
+from services import get_payment_service
 
 logger = logging.getLogger(__name__)
 
-payment_state: dict = {}
+payment_state: dict[int, Any] = {}
 STATE_TIMEOUT = 600
 
 
-def _clean_stale_states():
+def _clean_stale_states() -> None:
     now = time.time()
     stale = [
         uid
@@ -31,21 +28,25 @@ def _clean_stale_states():
         del payment_state[uid]
 
 
-def _set_state(user_id: int, value):
+def _set_state(user_id: int, value: Any) -> None:
     if isinstance(value, dict):
         value["_ts"] = time.time()
     payment_state[user_id] = value
 
 
-def _del_state(user_id: int):
+def _del_state(user_id: int) -> None:
     payment_state.pop(user_id, None)
 
 
 async def menu_payments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
     await update.message.reply_text("Menu pagos", reply_markup=menu_pagos)
 
 
 async def registrar_pago_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_user or not update.message:
+        return
     user_id = update.effective_user.id
     _clean_stale_states()
     _set_state(user_id, {"step": "nombre"})
@@ -53,6 +54,8 @@ async def registrar_pago_start(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def historial_pagos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_user or not update.message:
+        return
     user_id = update.effective_user.id
     _clean_stale_states()
     _set_state(user_id, {"step": "historial_nombre"})
@@ -60,26 +63,29 @@ async def historial_pagos(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_user or not update.message:
+        return
     user_id = update.effective_user.id
     texto = update.message.text
+    if not texto:
+        return
 
     if user_id not in payment_state:
         return
 
     state = payment_state[user_id]
-    members = await get_collection("members")
-    payments_col = await get_collection("payments")
+    svc = await get_payment_service()
 
     try:
         if state["step"] == "nombre":
-            member = await members.find_one({"name": texto, "active": True})
+            member = await svc.find_member(texto)
 
             if not member:
                 await update.message.reply_text("Miembro no encontrado")
                 _del_state(user_id)
                 return
 
-            last_payment = await payments_col.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
+            last_payment = await svc.get_last_payment(str(member["_id"]))
 
             _set_state(
                 user_id,
@@ -106,19 +112,10 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
             plan = PLANS[plan_key]
             payment_state[user_id]["plan"] = plan
+            payment_state[user_id]["plan_key"] = plan_key
             payment_state[user_id]["step"] = "confirmar"
 
-            dias_vencido = 0
-            if state["last_payment"]:
-                vencimiento = datetime.strptime(state["last_payment"]["due_date"], "%Y-%m-%d").date()
-                dias_vencido = calcular_dias_vencido(vencimiento)
-
-            grace_text = ""
-            if dias_vencido > 0:
-                if dias_vencido <= 4:
-                    grace_text = "\n Dentro del periodo de gracia (1-4 dias)"
-                else:
-                    grace_text = f"\n {dias_vencido} dias de retraso"
+            grace_text = await svc.get_grace_text(state["last_payment"])
 
             await update.message.reply_text(
                 f"Resumen del pago:\n\n"
@@ -126,7 +123,7 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 f"Plan: {plan['name']}\n"
                 f"Monto: ${plan['price']}\n"
                 f"Duracion: {plan['months']} mes(es){grace_text}\n\n"
-                f"\u00bfCConfirmar?",
+                f"Confirmar?",
                 reply_markup=menu_confirmar,
             )
 
@@ -140,78 +137,43 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 await update.message.reply_text("Selecciona una opcion valida", reply_markup=menu_confirmar)
                 return
 
-            plan = state["plan"]
-            hoy = date.today()
-            payment_date_str = format_fecha(hoy)
+            result = await svc.register_payment(
+                state["member_id"], state["member_name"], state["plan_key"], state.get("last_payment")
+            )
 
-            grace_period = False
-            if state["last_payment"]:
-                vencimiento_anterior = datetime.strptime(state["last_payment"]["due_date"], "%Y-%m-%d").date()
-                dia_pago = vencimiento_anterior.day
-                dias_vencido = calcular_dias_vencido(vencimiento_anterior)
-                ultimo_pago_date = datetime.strptime(state["last_payment"]["payment_date"], "%Y-%m-%d").date()
-
-                if dias_vencido > 4:
-                    nuevo_vencimiento = calcular_due_date(hoy, hoy.day)
-                else:
-                    nuevo_vencimiento = calcular_due_date(ultimo_pago_date, dia_pago)
-                    grace_period = True
-            else:
-                nuevo_vencimiento = calcular_due_date(hoy, hoy.day)
-
-            payment_data = {
-                "member_id": state["member_id"],
-                "member_name": state["member_name"],
-                "payment_date": payment_date_str,
-                "amount": plan["price"],
-                "plan": plan["name"],
-                "due_date": format_fecha(nuevo_vencimiento),
-                "grace_period": grace_period,
-                "months": plan["months"],
-                "created_at": datetime.utcnow(),
-            }
-
-            await payments_col.insert_one(payment_data)
+            if not result:
+                await update.message.reply_text("Error al registrar pago. Plan invalido.")
+                _del_state(user_id)
+                return
 
             await update.message.reply_text(
                 f"Pago registrado!\n\n"
                 f"Miembro: {state['member_name']}\n"
-                f"Monto: ${plan['price']}\n"
-                f"Pago: {payment_date_str}\n"
-                f"Vence: {format_fecha(nuevo_vencimiento)}\n"
-                f"{'Periodo de gracia' if grace_period else ''}",
+                f"Monto: ${result['price']}\n"
+                f"Pago: {result['payment_date']}\n"
+                f"Vence: {result['due_date']}\n"
+                f"{'Periodo de gracia' if result['grace_period'] else ''}",
                 reply_markup=menu_principal,
             )
 
             _del_state(user_id)
 
         elif state["step"] == "historial_nombre":
-            member = await members.find_one({"name": texto, "active": True})
+            member = await svc.find_member(texto)
 
             if not member:
                 await update.message.reply_text("Miembro no encontrado")
                 _del_state(user_id)
                 return
 
-            all_payments = (
-                await payments_col.find({"member_id": str(member["_id"])}).sort("payment_date", -1).to_list(None)
-            )
+            all_payments = await svc.get_history(str(member["_id"]), limit=10)
 
             if not all_payments:
                 await update.message.reply_text("Sin historial de pagos")
                 _del_state(user_id)
                 return
 
-            msg = "HISTORIAL DE PAGOS\n"
-            msg += f" {texto}\n\n"
-
-            for i, p in enumerate(all_payments[:10], 1):
-                msg += f"{i}. {p['payment_date']} - ${p['amount']} ({p['plan']})\n"
-                msg += f"   Vence: {p['due_date']}"
-                if p.get("grace_period"):
-                    msg += " \u26a0\ufe0f"
-                msg += "\n"
-
+            msg = await svc.format_history(texto, all_payments)
             await update.message.reply_text(msg)
             _del_state(user_id)
 
@@ -222,5 +184,5 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             _del_state(user_id)
 
 
-def get_payment_state():
+def get_payment_state() -> dict[int, Any]:
     return payment_state

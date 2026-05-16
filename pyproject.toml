@@ -22,9 +22,12 @@ asyncio_mode = "auto"
 addopts = "-v --tb=short --cov=. --cov-report=term-missing --cov-report=html:coverage_html"
 markers = ["integration: marks integration tests that need MongoDB"]
 
+[project.scripts]
+gym-migrate = "utils.migrate:main"
+
 [tool.coverage.run]
 source = ["bot", "config", "database", "handlers", "keyboards", "models", "utils"]
-omit = ["tests/*"]
+omit = ["tests/*", "migrations/*"]
 
 [tool.coverage.report]
 exclude_lines = [

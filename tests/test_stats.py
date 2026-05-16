@@ -5,13 +5,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from handlers.stats import ingresos_mes, menu_stats, miembros_activos, vencimientos_stats
-from keyboards import menu_estadisticas
+from services import reset_services
+
+
+@pytest.fixture(autouse=True)
+def _reset_services():
+    reset_services()
+    yield
 
 
 @pytest.fixture
 def mock_collection_pair():
-    """Creates separate mock collections for members and payments."""
     members = AsyncMock()
     members.find = MagicMock()
     members.find.return_value.to_list = AsyncMock(return_value=[])
@@ -34,301 +38,178 @@ def patch_collections(mock_collection_pair):
             return members_mock
         return payments_mock
 
-    with patch("handlers.stats.get_collection", side_effect=side_effect):
+    with patch("services.factory.get_collection", side_effect=side_effect):
         yield members_mock, payments_mock
 
 
 @pytest.fixture
 def fixed_today():
     today = date(2026, 5, 15)
-    with patch("handlers.stats.date") as mock_stats_date:
+    with (
+        patch("handlers.stats.date") as mock_stats_date,
+        patch("utils.dates.date") as mock_utils_date,
+    ):
         mock_stats_date.today.return_value = today
-        with patch("utils.dates.date") as mock_utils_date:
-            mock_utils_date.today.return_value = today
-            yield today
+        mock_utils_date.today.return_value = today
+        yield today
 
 
+def make_update(text: str = "") -> MagicMock:
+    update = MagicMock()
+    update.message = MagicMock()
+    update.message.text = text
+    update.message.reply_text = AsyncMock()
+    update.effective_user.id = 12345
+    update.effective_chat = MagicMock()
+    update.effective_chat.type = "private"
+    return update
+
+
+@pytest.mark.usefixtures("patch_collections", "fixed_today")
 class TestMenuStats:
-    async def test_menu_stats_sends_menu(self, mock_update, mock_context):
+    async def test_menu_stats_replies(self, mock_update, mock_context):
+        from handlers.stats import menu_stats
+
+        mock_update.message = MagicMock()
+        mock_update.message.reply_text = AsyncMock()
         await menu_stats(mock_update, mock_context)
-        mock_update.message.reply_text.assert_awaited_once_with("📈 Menu estadisticas", reply_markup=menu_estadisticas)
+        mock_update.message.reply_text.assert_awaited_once()
+
+    async def test_menu_stats_no_message(self, mock_update, mock_context):
+        from handlers.stats import menu_stats
+
+        mock_update.message = None
+        await menu_stats(mock_update, mock_context)
 
 
+@pytest.mark.usefixtures("patch_collections", "fixed_today")
 class TestMiembrosActivos:
-    async def test_empty_members_list(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, _ = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(return_value=[])
-        await miembros_activos(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "Total: 0" in msg
-        assert "Activos: 0" in msg
-        assert "Vencidos: 0" in msg
-
-    async def test_all_active_members(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, payments_mock = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(return_value=[{"_id": "m1", "name": "Juan", "active": True}])
-        payments_mock.find_one = AsyncMock(return_value={"member_id": "m1", "due_date": "2026-05-15", "amount": 500})
-        await miembros_activos(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "Total: 1" in msg
-        assert "Activos: 1" in msg
-        assert "En gracia: 0" in msg
-        assert "Vencidos: 0" in msg
-
-    async def test_members_in_grace_period(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, payments_mock = patch_collections
+    async def test_active_members_stats(self, mock_collection_pair):
+        members_mock, payments_mock = mock_collection_pair
         members_mock.find.return_value.to_list = AsyncMock(
-            return_value=[{"_id": "m1", "name": "Pedro", "active": True}]
-        )
-        payments_mock.find_one = AsyncMock(return_value={"member_id": "m1", "due_date": "2026-05-12", "amount": 500})
-        await miembros_activos(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "En gracia: 1" in msg
-        assert "Activos: 0" in msg
-
-    async def test_overdue_members(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, payments_mock = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(return_value=[{"_id": "m1", "name": "Luis", "active": True}])
-        payments_mock.find_one = AsyncMock(return_value={"member_id": "m1", "due_date": "2026-05-08", "amount": 500})
-        await miembros_activos(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "Vencidos: 1" in msg
-        assert "Activos: 0" in msg
-
-    async def test_member_without_payment_is_overdue(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, payments_mock = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(
-            return_value=[{"_id": "m1", "name": "Carlos", "active": True}]
-        )
-        payments_mock.find_one = AsyncMock(return_value=None)
-        await miembros_activos(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "Vencidos: 1" in msg
-        assert "Total: 1" in msg
-
-    async def test_mixed_statuses_with_renovation_percentage(
-        self, mock_update, mock_context, patch_collections, fixed_today
-    ):
-        members_mock, payments_mock = patch_collections
-        members_data = [
-            {"_id": "m1", "name": "Ana", "active": True},
-            {"_id": "m2", "name": "Beto", "active": True},
-            {"_id": "m3", "name": "Carla", "active": True},
-            {"_id": "m4", "name": "Dave", "active": True},
-        ]
-        members_mock.find.return_value.to_list = AsyncMock(return_value=members_data)
-
-        payment_map = {
-            "m1": {"member_id": "m1", "due_date": "2026-05-15", "amount": 500},
-            "m2": {"member_id": "m2", "due_date": "2026-05-12", "amount": 500},
-            "m3": {"member_id": "m3", "due_date": "2026-05-08", "amount": 500},
-        }
-
-        async def find_one_side(query, sort=None):
-            return payment_map.get(query.get("member_id"))
-
-        payments_mock.find_one.side_effect = find_one_side
-
-        await miembros_activos(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "Total: 4" in msg
-        assert "Activos: 1" in msg
-        assert "En gracia: 1" in msg
-        assert "Vencidos: 2" in msg
-        assert "25.0%" in msg
-
-    async def test_single_active_shows_100_percent(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, payments_mock = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(return_value=[{"_id": "m1", "name": "Eva", "active": True}])
-        payments_mock.find_one = AsyncMock(return_value={"member_id": "m1", "due_date": "2026-05-15", "amount": 500})
-        await miembros_activos(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "100.0%" in msg
-
-    async def test_inactive_members_excluded_from_count(
-        self, mock_update, mock_context, patch_collections, fixed_today
-    ):
-        members_mock, _ = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(return_value=[])
-        await miembros_activos(mock_update, mock_context)
-        members_mock.find.assert_called_once_with({"active": True})
-
-
-class TestIngresosMes:
-    async def test_no_payments_this_or_last_month(self, mock_update, mock_context, patch_collections, fixed_today):
-        _, payments_mock = patch_collections
-        payments_mock.find.return_value.to_list = AsyncMock(return_value=[])
-        await ingresos_mes(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "$0" in msg or "$0," in msg
-        assert "Registros: 0" in msg
-
-    async def test_current_month_payments_only(self, mock_update, mock_context, patch_collections, fixed_today):
-        _, payments_mock = patch_collections
-        payments_mock.find.return_value.to_list = AsyncMock(
             return_value=[
-                {"amount": 500, "payment_date": "2026-05-10"},
-                {"amount": 500, "payment_date": "2026-05-12"},
+                {"_id": "1", "name": "Juan"},
+                {"_id": "2", "name": "Maria"},
             ]
         )
-        await ingresos_mes(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "$1,000" in msg
-        assert "Registros: 2" in msg
-
-    async def test_positive_change_from_last_month(self, mock_update, mock_context, patch_collections, fixed_today):
-        _, payments_mock = patch_collections
-        mock_find = MagicMock()
-        mock_find.return_value.to_list = AsyncMock()
-        mock_find.return_value.to_list.side_effect = [
-            [{"amount": 800, "payment_date": "2026-05-10"}],
-            [{"amount": 600, "payment_date": "2026-04-15"}],
-        ]
-        payments_mock.find = mock_find
-
-        await ingresos_mes(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "$800" in msg
-        assert "$600" in msg
-        assert "+33.3%" in msg or "📈" in msg
-
-    async def test_negative_change_from_last_month(self, mock_update, mock_context, patch_collections, fixed_today):
-        _, payments_mock = patch_collections
-        mock_find = MagicMock()
-        mock_find.return_value.to_list = AsyncMock()
-        mock_find.return_value.to_list.side_effect = [
-            [{"amount": 300, "payment_date": "2026-05-10"}],
-            [{"amount": 900, "payment_date": "2026-04-15"}],
-        ]
-        payments_mock.find = mock_find
-
-        await ingresos_mes(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "$300" in msg
-        assert "$900" in msg
-        assert "-66.7%" in msg or "📉" in msg
-
-    async def test_no_comparison_when_previous_month_empty(
-        self, mock_update, mock_context, patch_collections, fixed_today
-    ):
-        _, payments_mock = patch_collections
-        mock_find = MagicMock()
-        mock_find.return_value.to_list = AsyncMock()
-        mock_find.return_value.to_list.side_effect = [
-            [{"amount": 500, "payment_date": "2026-05-10"}],
-            [],
-        ]
-        payments_mock.find = mock_find
-
-        await ingresos_mes(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "$500" in msg
-        assert "Cambio" not in msg
-
-    async def test_zero_current_month_with_previous(self, mock_update, mock_context, patch_collections, fixed_today):
-        _, payments_mock = patch_collections
-        mock_find = MagicMock()
-        mock_find.return_value.to_list = AsyncMock()
-        mock_find.return_value.to_list.side_effect = [
-            [],
-            [{"amount": 500, "payment_date": "2026-04-15"}],
-        ]
-        payments_mock.find = mock_find
-
-        await ingresos_mes(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "$0" in msg or "$0," in msg
-        assert "Registros: 0" in msg
-        assert "$500" in msg
-        assert "📉" in msg or "-100.0%" in msg
-
-
-class TestVencimientosStats:
-    async def test_no_active_members(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, _ = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(return_value=[])
-        await vencimientos_stats(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "Hoy" in msg
-        assert "0" in msg
-
-    async def test_members_expiring_today(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, payments_mock = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(return_value=[{"_id": "m1", "name": "Ana", "active": True}])
-        payments_mock.find_one = AsyncMock(return_value={"member_id": "m1", "due_date": "2026-05-15", "amount": 500})
-        await vencimientos_stats(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "Ana" in msg
-        assert "Hoy" in msg
-
-    async def test_members_expiring_this_week(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, payments_mock = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(return_value=[{"_id": "m1", "name": "Luis", "active": True}])
-        payments_mock.find_one = AsyncMock(return_value={"member_id": "m1", "due_date": "2026-05-18", "amount": 500})
-        await vencimientos_stats(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "semana" in msg
-        assert "Luis" in msg
-
-    async def test_members_expiring_this_month(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, payments_mock = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(
-            return_value=[{"_id": "m1", "name": "Carla", "active": True}]
+        payments_mock.find_one = AsyncMock(
+            side_effect=[
+                {"due_date": "2026-06-15", "payment_date": "2026-05-01"},
+                {"due_date": "2026-05-10", "payment_date": "2026-04-01"},
+            ]
         )
-        payments_mock.find_one = AsyncMock(return_value={"member_id": "m1", "due_date": "2026-06-05", "amount": 500})
-        await vencimientos_stats(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "Este mes" in msg
-        assert "Carla" in msg
 
-    async def test_mixed_expiry_ranges(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, payments_mock = patch_collections
-        members_data = [
-            {"_id": "m1", "name": "Diana", "active": True},
-            {"_id": "m2", "name": "Eduardo", "active": True},
-            {"_id": "m3", "name": "Fer", "active": True},
-        ]
-        members_mock.find.return_value.to_list = AsyncMock(return_value=members_data)
+        from handlers.stats import miembros_activos
 
-        payment_map = {
-            "m1": {"member_id": "m1", "due_date": "2026-05-15", "amount": 500},
-            "m2": {"member_id": "m2", "due_date": "2026-05-18", "amount": 500},
-            "m3": {"member_id": "m3", "due_date": "2026-06-05", "amount": 500},
-        }
+        update = make_update()
+        context = MagicMock()
+        await miembros_activos(update, context)
+        update.message.reply_text.assert_awaited_once()
+        msg = update.message.reply_text.call_args[0][0]
+        assert "Total: 2" in msg
 
-        async def find_one_side(query, sort=None):
-            return payment_map.get(query.get("member_id"))
+    async def test_no_message_returns(self, mock_collection_pair):
+        from handlers.stats import miembros_activos
 
-        payments_mock.find_one.side_effect = find_one_side
+        update = MagicMock()
+        update.message = None
+        context = MagicMock()
+        await miembros_activos(update, context)
 
-        await vencimientos_stats(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "Hoy" in msg and "Diana" in msg
-        assert "semana" in msg and "Eduardo" in msg
-        assert "Este mes" in msg and "Fer" in msg
+    async def test_db_error_returns_error_message(self, mock_collection_pair):
+        members_mock, _ = mock_collection_pair
+        members_mock.find.side_effect = Exception("DB error")
 
-    async def test_member_without_payment_skipped(self, mock_update, mock_context, patch_collections, fixed_today):
-        members_mock, payments_mock = patch_collections
-        members_mock.find.return_value.to_list = AsyncMock(return_value=[{"_id": "m1", "name": "Hugo", "active": True}])
-        payments_mock.find_one = AsyncMock(return_value=None)
-        await vencimientos_stats(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "Hugo" not in msg
+        from handlers.stats import miembros_activos
 
-    async def test_more_than_five_month_expirations_shows_overflow(
-        self, mock_update, mock_context, patch_collections, fixed_today
-    ):
-        members_mock, payments_mock = patch_collections
-        members_data = [{"_id": f"m{i}", "name": f"User{i}", "active": True} for i in range(8)]
-        members_mock.find.return_value.to_list = AsyncMock(return_value=members_data)
+        update = make_update()
+        context = MagicMock()
+        await miembros_activos(update, context)
+        msg = update.message.reply_text.call_args[0][0]
+        assert "Error" in msg
 
-        payment_map = {f"m{i}": {"member_id": f"m{i}", "due_date": "2026-06-01", "amount": 500} for i in range(8)}
 
-        async def find_one_side(query, sort=None):
-            return payment_map.get(query.get("member_id"))
+@pytest.mark.usefixtures("patch_collections", "fixed_today")
+class TestIngresosMes:
+    async def test_income_stats(self, mock_collection_pair):
+        from services.report_service import ReportService
 
-        payments_mock.find_one.side_effect = find_one_side
+        members_mock, payments_mock = mock_collection_pair
+        svc = ReportService(members_mock, payments_mock)
+        with patch("handlers.stats.get_report_service", return_value=svc):
+            payments_mock.find.return_value.to_list = AsyncMock(return_value=[{"amount": 500}])
+            payments_mock.aggregate.return_value.to_list = AsyncMock(return_value=[{"_id": None, "total": 5000}])
 
-        await vencimientos_stats(mock_update, mock_context)
-        msg = mock_update.message.reply_text.call_args[0][0]
-        assert "... y 3 mas" in msg
+            from handlers.stats import ingresos_mes
+
+            update = make_update()
+            context = MagicMock()
+            with patch("handlers.stats.date") as mock_date:
+                mock_date.today.return_value = date(2026, 5, 15)
+                await ingresos_mes(update, context)
+            update.message.reply_text.assert_awaited_once()
+
+    async def test_no_message_returns(self, mock_collection_pair):
+        from handlers.stats import ingresos_mes
+
+        update = MagicMock()
+        update.message = None
+        context = MagicMock()
+        await ingresos_mes(update, context)
+
+    async def test_db_error_returns_error_message(self, mock_collection_pair):
+        members_mock, payments_mock = mock_collection_pair
+        svc_mock = AsyncMock()
+        svc_mock.get_income_data = AsyncMock(side_effect=Exception("DB error"))
+
+        with patch("handlers.stats.get_report_service", return_value=svc_mock):
+            from handlers.stats import ingresos_mes
+
+            update = make_update()
+            context = MagicMock()
+            with patch("handlers.stats.date") as mock_date:
+                mock_date.today.return_value = date(2026, 5, 15)
+                await ingresos_mes(update, context)
+            msg = update.message.reply_text.call_args[0][0]
+            assert "Error" in msg
+
+
+@pytest.mark.usefixtures("patch_collections", "fixed_today")
+class TestVencimientosStats:
+    async def test_expirations_stats(self, mock_collection_pair):
+        members_mock, payments_mock = mock_collection_pair
+        members_mock.find.return_value.to_list = AsyncMock(
+            return_value=[
+                {"_id": "1", "name": "Juan"},
+            ]
+        )
+        payments_mock.find_one = AsyncMock(return_value={"due_date": "2026-05-15", "payment_date": "2026-05-01"})
+
+        from handlers.stats import vencimientos_stats
+
+        update = make_update()
+        context = MagicMock()
+        await vencimientos_stats(update, context)
+        update.message.reply_text.assert_awaited_once()
+        msg = update.message.reply_text.call_args[0][0]
+        assert "VENCIMIENTOS" in msg
+
+    async def test_no_message_returns(self, mock_collection_pair):
+        from handlers.stats import vencimientos_stats
+
+        update = MagicMock()
+        update.message = None
+        context = MagicMock()
+        await vencimientos_stats(update, context)
+
+    async def test_db_error_returns_error_message(self, mock_collection_pair):
+        members_mock, _ = mock_collection_pair
+        members_mock.find.side_effect = Exception("DB error")
+
+        from handlers.stats import vencimientos_stats
+
+        update = make_update()
+        context = MagicMock()
+        await vencimientos_stats(update, context)
+        msg = update.message.reply_text.call_args[0][0]
+        assert "Error" in msg

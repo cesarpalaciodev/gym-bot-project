@@ -1,4 +1,4 @@
-.PHONY: install lint typecheck test format clean docker-build docker-up security
+.PHONY: install lint typecheck test format clean docker-build docker-up security migrate-upgrade migrate-downgrade migrate-status
 
 # Install all dependencies
 install:
@@ -55,6 +55,16 @@ clean:
 	rm -rf __pycache__/ .pytest_cache/ .mypy_cache/ coverage_html/
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
+
+# Database migrations
+migrate-upgrade:
+	python -m utils.migrate upgrade
+
+migrate-downgrade:
+	python -m utils.migrate downgrade --steps $(steps)
+
+migrate-status:
+	python -m utils.migrate status
 
 # Run everything
 all: lint typecheck test security

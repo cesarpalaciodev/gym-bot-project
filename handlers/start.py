@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from telegram import Update
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes
@@ -8,6 +10,8 @@ from keyboards import menu_principal
 async def verificar_admin_grupo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     chat = update.effective_chat
     user = update.effective_user
+    if not chat or not user:
+        return False
 
     if chat.type == "private":
         return True
@@ -21,49 +25,58 @@ async def verificar_admin_grupo(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await verificar_admin_grupo(update, context):
-        await update.message.reply_text("No tienes acceso. Debes ser admin del grupo.")
+        if update.message:
+            await update.message.reply_text("No tienes acceso. Debes ser admin del grupo.")
         return
 
+    if not update.message:
+        return
     await update.message.reply_text(
-        "🏋️ Sistema del gimnasio",
+        "Sistema del gimnasio",
         reply_markup=menu_principal,
     )
 
 
 async def getgroupid(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
     chat = update.effective_chat
+    if not chat:
+        return
     await update.message.reply_text(f"Group ID: {chat.id}")
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
     ayuda = """
-🏋️ COMANDOS DISPONIBLES
+COMANDOS DISPONIBLES
 
-👥 MIEMBROS
-➕ Agregar miembro - Nombre Telefono YYYY-MM-DD
-👥 Agregar varios - Registro masivo (uno por linea)
-🔍 Buscar miembro - Buscar por nombre
-📋 Lista miembros - Ver todos
-🗑 Eliminar miembro - Eliminar uno
-🗑 Eliminar varios - Eliminacion masiva
+MIEMBROS
++ Agregar miembro - Nombre Telefono YYYY-MM-DD
++ Agregar varios - Registro masivo (uno por linea)
++ Buscar miembro - Buscar por nombre
++ Lista miembros - Ver todos
++ Eliminar miembro - Eliminar uno
++ Eliminar varios - Eliminacion masiva
 
-💰 PAGOS
-💰 Registrar pago - Registrar pago
-📜 Historial - Ver historial
+PAGOS
++ Registrar pago - Registrar pago
++ Historial - Ver historial
 
-📊 REPORTES
-⚠️ Deudores - Ver morosos
-📊 Excel - Generar reporte
+REPORTES
++ Deudores - Ver morosos
++ Excel - Generar reporte
 
-📈 ESTADISTICAS
-👥 Miembros activos - Ver estadisticas
-💰 Ingresos del mes - Ver ingresos
-📅 Vencimientos - Ver vencimientos
+ESTADISTICAS
++ Miembros activos - Ver estadisticas
++ Ingresos del mes - Ver ingresos
++ Vencimientos - Ver vencimientos
 
-💾 EXPORTAR
-📊 Excel miembros - Exportar a Excel
+EXPORTAR
++ Excel miembros - Exportar a Excel
 
-📌 NOTA: El dia de pago es el mismo dia de registro.
+NOTA: El dia de pago es el mismo dia de registro.
 Si te registras el 03, pagas el 03 de cada mes.
 """
     await update.message.reply_text(ayuda)

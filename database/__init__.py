@@ -61,15 +61,21 @@ async def init_collections() -> None:
     if "audit_log" not in existing:
         await db.create_collection("audit_log")
         logger.info("Colección 'audit_log' creada")
+    if "sessions" not in existing:
+        await db.create_collection("sessions")
+        logger.info("Colección 'sessions' creada")
 
     await db.members.create_index("name", background=True)
     await db.members.create_index([("phone", 1)], background=True, sparse=True)
+    await db.members.create_index([("active", 1)], background=True)
     await db.payments.create_index("member_id", background=True)
     await db.payments.create_index("payment_date", background=True)
     await db.payments.create_index([("member_id", 1), ("payment_date", -1)], background=True)
     await db.admins.create_index("telegram_id", unique=True, background=True)
     await db.audit_log.create_index("created_at", background=True, expireAfterSeconds=7776000)
     await db.rate_limits.create_index("created_at", background=True, expireAfterSeconds=10)
+    await db.sessions.create_index("token", unique=True, background=True)
+    await db.sessions.create_index("expiry", expireAfterSeconds=0, background=True)
 
     logger.info("Colecciones e índices inicializados")
 

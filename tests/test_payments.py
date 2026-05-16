@@ -14,12 +14,19 @@ from handlers.payments import (
     registrar_pago_start,
 )
 from keyboards import menu_confirmar, menu_pagos, menu_planes, menu_principal
+from services import reset_services
 from utils import format_fecha
 
 
 @pytest.fixture(autouse=True)
-def _patch_handler_get_collection(mock_collection):
-    with patch("handlers.payments.get_collection", AsyncMock(return_value=mock_collection)):
+def _reset_services():
+    reset_services()
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _patch_factory_get_collection(mock_collection):
+    with patch("services.factory.get_collection", AsyncMock(return_value=mock_collection)):
         yield
 
 
@@ -288,6 +295,7 @@ class TestProcesarPago:
         payment_state[12345] = {
             "step": "confirmar",
             "plan": PLANS["1"],
+            "plan_key": "1",
             "member_id": str(ObjectId()),
             "member_name": "Cesar Palacio",
             "last_payment": None,
@@ -308,6 +316,7 @@ class TestProcesarPago:
         payment_state[12345] = {
             "step": "confirmar",
             "plan": PLANS["1"],
+            "plan_key": "1",
             "member_id": str(ObjectId()),
             "member_name": "Cesar Palacio",
             "last_payment": {
@@ -333,6 +342,7 @@ class TestProcesarPago:
         payment_state[12345] = {
             "step": "confirmar",
             "plan": PLANS["1"],
+            "plan_key": "1",
             "member_id": str(ObjectId()),
             "member_name": "Cesar Palacio",
             "last_payment": {
@@ -358,6 +368,7 @@ class TestProcesarPago:
         payment_state[12345] = {
             "step": "confirmar",
             "plan": PLANS["1"],
+            "plan_key": "1",
             "member_id": str(ObjectId()),
             "member_name": "Cesar Palacio",
             "last_payment": None,

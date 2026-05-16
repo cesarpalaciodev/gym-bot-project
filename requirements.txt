@@ -11,3 +11,5 @@ aiofiles>=24.1.0
 sentry-sdk>=2.0.0
 redis>=5.0.0
 aioredis>=2.0.0
+tenacity>=8.0.0
+slowapi>=0.1.9

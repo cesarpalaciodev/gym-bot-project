@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -10,8 +13,8 @@ class Admin:
     created_at: datetime = field(default_factory=datetime.utcnow)
     _id: str | None = None
 
-    def to_dict(self) -> dict:
-        data = {
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
             "telegram_id": self.telegram_id,
             "name": self.name,
             "role": self.role,
@@ -22,7 +25,7 @@ class Admin:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Admin":
+    def from_dict(cls, data: dict[str, Any]) -> Admin:
         return cls(
             _id=str(data.get("_id")),
             telegram_id=data.get("telegram_id", 0),

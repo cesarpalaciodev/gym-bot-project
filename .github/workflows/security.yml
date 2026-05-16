@@ -5,6 +5,8 @@ on:
     - cron: "0 6 * * 1"
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   security:
@@ -22,7 +24,7 @@ jobs:
           pip install bandit safety
 
       - name: Bandit security scan
-        run: bandit -r bot.py config.py database/ handlers/ keyboards.py models/ utils/
+        run: bandit -r bot.py config.py dashboard/ database/ handlers/ keyboards.py models/ services/ utils/
 
       - name: Safety dependency scan
         run: safety check -r requirements.txt

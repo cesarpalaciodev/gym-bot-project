@@ -41,5 +41,10 @@ def mock_collection():
 
 @pytest.fixture
 def patch_get_collection(mock_collection):
-    with patch("database.get_collection", AsyncMock(return_value=mock_collection)) as mock:
+    from utils import auth as _auth
+
+    with (
+        patch("database.get_collection", AsyncMock(return_value=mock_collection)) as mock,
+        patch.object(_auth, "get_collection", AsyncMock(return_value=mock_collection)),
+    ):
         yield mock

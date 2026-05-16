@@ -5,6 +5,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from services import reset_services
+
+
+@pytest.fixture(autouse=True)
+def _reset_services():
+    reset_services()
+    yield
+
 
 @pytest.fixture
 def mock_collection_pair():
@@ -30,7 +38,7 @@ def patch_collections(mock_collection_pair):
             return members_mock
         return payments_mock
 
-    with patch("handlers.notifications.get_collection", side_effect=side_effect):
+    with patch("services.factory.get_collection", side_effect=side_effect):
         yield members_mock, payments_mock
 
 

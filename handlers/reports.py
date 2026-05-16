@@ -1,134 +1,49 @@
+from __future__ import annotations
+
 import logging
-from datetime import date, datetime
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from database import get_collection
+from config import EXCEL_FILE
 from keyboards import menu_reportes
-from utils import calcular_dias_vencido
+from services import get_report_service
 
 logger = logging.getLogger(__name__)
 
 
 async def menu_reports(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("📊 Menu reportes", reply_markup=menu_reportes)
+    if not update.message:
+        return
+    try:
+        await update.message.reply_text("Menu reportes", reply_markup=menu_reportes)
+    except Exception as e:
+        logger.error(f"Error en menu_reports: {e}")
 
 
 async def deudores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    members = await get_collection("members")
-    payments = await get_collection("payments")
-
-    hoy = date.today()
-    texto = "⚠️ MIEMBROS CON PAGOS VENCIDOS:\n\n"
-
-    all_members = await members.find({"active": True}).to_list(None)
-
-    if not all_members:
-        await update.message.reply_text("No hay miembros registrados")
+    if not update.message:
         return
-
-    deudores_count = 0
-
-    for member in all_members:
-        last_payment = await payments.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
-
-        if not last_payment:
-            continue
-
-        due_date = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
-        dias_vencido = calcular_dias_vencido(due_date)
-
-        if dias_vencido == 0:
-            if hoy == due_date:
-                texto += f"• {member['name']}\n"
-                texto += f"  ⏰ Vence hoy: {last_payment['due_date']}\n\n"
-                deudores_count += 1
-            continue
-        elif 1 <= dias_vencido <= 4:
-            texto += f"• {member['name']}\n"
-            texto += f"  ⚠️ En gracia ({dias_vencido} dias)\n"
-            texto += f"  Vencio: {last_payment['due_date']}\n\n"
-            deudores_count += 1
-        else:
-            texto += f"• {member['name']}\n"
-            texto += f"  💀 Vencio: {last_payment['due_date']}\n"
-            texto += f"  📅 Dias vencido: {dias_vencido}\n\n"
-            deudores_count += 1
-
-    if deudores_count == 0:
-        texto = "✅ Todos los miembros estan al dia"
-
-    await update.message.reply_text(texto)
+    try:
+        svc = await get_report_service()
+        texto = await svc.get_overdue_text()
+        await update.message.reply_text(texto)
+    except Exception as e:
+        logger.error(f"Error en deudores: {e}")
+        await update.message.reply_text("Error al generar reporte de deudores")
 
 
 async def excel_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    import os
-
-    from openpyxl import Workbook
-    from openpyxl.styles import PatternFill
-
-    from config import EXCEL_FILE
-
-    members = await get_collection("members")
-    payments = await get_collection("payments")
-
-    os.makedirs("reports", exist_ok=True)
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Miembros"
-
-    ws.append(["Nombre", "Fecha Registro", "Ultimo Pago", "Vence", "Plan", "Dias Vencido", "Estado"])
-
-    verde = PatternFill(start_color="90EE90", fill_type="solid")
-    rojo = PatternFill(start_color="FF7F7F", fill_type="solid")
-    amarillo = PatternFill(start_color="FFFF99", fill_type="solid")
-
-    hoy = date.today()
-
-    all_members = await members.find({"active": True}).to_list(None)
-
-    for member in all_members:
-        last_payment = await payments.find_one({"member_id": str(member["_id"])}, sort=[("payment_date", -1)])
-
-        if last_payment:
-            vencimiento = datetime.strptime(last_payment["due_date"], "%Y-%m-%d").date()
-            dias_vencido = (hoy - vencimiento).days
-
-            if dias_vencido < 0:
-                estado = "Al dia"
-                dias_display = 0
-                fill = verde
-            elif dias_vencido == 0:
-                estado = "Vence hoy"
-                dias_display = 0
-                fill = amarillo
-            elif dias_vencido <= 4:
-                estado = "En gracia"
-                dias_display = dias_vencido
-                fill = amarillo
-            else:
-                estado = "Vencido"
-                dias_display = dias_vencido
-                fill = rojo
-
-            ws.append(
-                [
-                    member["name"],
-                    member["created_at"].strftime("%Y-%m-%d"),
-                    last_payment["payment_date"],
-                    last_payment["due_date"],
-                    last_payment["plan"],
-                    dias_display,
-                    estado,
-                ]
-            )
-
-            fila = ws.max_row
-            ws[f"G{fila}"].fill = fill
-
-    wb.save(EXCEL_FILE)
-
-    with open(EXCEL_FILE, "rb") as f:
-        await update.message.reply_document(f, filename="reporte_miembros.xlsx")
+    if not update.message:
+        return
+    try:
+        svc = await get_report_service()
+        filepath = await svc.generate_excel(EXCEL_FILE)
+        with open(filepath, "rb") as f:
+            await update.message.reply_document(f, filename="reporte_miembros.xlsx")
+    except (OSError, ValueError) as e:
+        logger.error(f"Error generando Excel: {e}")
+        await update.message.reply_text("Error al generar reporte Excel")
+    except Exception as e:
+        logger.error(f"Error inesperado en excel_reporte: {e}")
+        await update.message.reply_text("Error al generar reporte")

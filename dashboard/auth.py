@@ -2,20 +2,22 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import os
 import secrets
 import time
 from typing import Any
 
 from fastapi import Request
+from motor.motor_asyncio import AsyncIOMotorCollection
 
 from config import ADMIN_ID
 from database import get_collection
 
-SECRET_KEY = secrets.token_hex(32)
+SECRET_KEY = os.getenv("DASHBOARD_SECRET", secrets.token_hex(32))
 COOKIE_NAME = "gym_session"
-SESSION_DURATION = 86400 * 7  # 7 days
+SESSION_DURATION = 86400 * 7
 
-_sessions: dict[str, dict[str, Any]] = {}
+CSRF_TOKEN_NAME = "gym_csrf"
 
 
 def _make_token() -> str:
@@ -26,27 +28,31 @@ def _sign(value: str) -> str:
     return hmac.new(SECRET_KEY.encode(), value.encode(), hashlib.sha256).hexdigest()[:12]
 
 
-def create_session(chat_id: int) -> str:
+async def _sessions_col() -> AsyncIOMotorCollection[Any]:
+    col = await get_collection("sessions")
+    return col
+
+
+async def create_session(chat_id: int) -> str:
     token = _make_token()
     expiry = time.time() + SESSION_DURATION
-    _sessions[token] = {"chat_id": chat_id, "expiry": expiry}
+    col = await _sessions_col()
+    await col.insert_one({"token": token, "chat_id": chat_id, "expiry": expiry})
     return f"{token}.{_sign(token)}"
 
 
-def get_session_from_cookie(cookie: str | None) -> dict[str, Any] | None:
+async def get_session_from_cookie(cookie: str | None) -> dict[str, Any] | None:
     if not cookie or "." not in cookie:
         return None
     token, sig = cookie.split(".", 1)
     expected = _sign(token)
     if not hmac.compare_digest(sig, expected):
         return None
-    data = _sessions.get(token)
-    if not data:
-        return None
-    if time.time() > data["expiry"]:
-        del _sessions[token]
-        return None
-    return data
+    col = await _sessions_col()
+    data = await col.find_one({"token": token, "expiry": {"$gt": time.time()}})
+    if data:
+        return {"chat_id": data["chat_id"]}
+    return None
 
 
 async def _verify_admin(chat_id: int) -> dict[str, Any] | None:
@@ -72,7 +78,7 @@ async def get_current_admin(request: Request) -> dict[str, Any] | None:
 
     data = None
     if session:
-        data = get_session_from_cookie(session)
+        data = await get_session_from_cookie(session)
 
     if data:
         cid = data["chat_id"]
@@ -80,3 +86,17 @@ async def get_current_admin(request: Request) -> dict[str, Any] | None:
     if cid:
         return await _verify_admin(cid)
     return None
+
+
+def generate_csrf_token() -> str:
+    token = secrets.token_urlsafe(32)
+    sig = _sign(token)
+    return f"{token}.{sig}"
+
+
+def verify_csrf_token(token: str) -> bool:
+    if "." not in token:
+        return False
+    value, sig = token.split(".", 1)
+    expected = _sign(value)
+    return hmac.compare_digest(sig, expected)

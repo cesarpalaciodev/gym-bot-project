@@ -1,8 +1,11 @@
+import logging
 import time
 from collections import defaultdict
 from typing import Any
 
 from config import REDIS_URL
+
+logger = logging.getLogger(__name__)
 
 _redis: Any = None
 _fallback_store: defaultdict[int, list[float]] = defaultdict(list)
@@ -14,7 +17,7 @@ async def _get_redis() -> Any:
         try:
             import aioredis
 
-            _redis = await aioredis.from_url(REDIS_URL, decode_responses=True)
+            _redis = await aioredis.from_url(REDIS_URL, decode_responses=True)  # type: ignore[no-untyped-call]
         except ImportError:
             pass
     return _redis
@@ -35,8 +38,8 @@ async def check_rate_limit(user_id: int, max_per_window: int = 10, window_second
             await redis_conn.zadd(key, {str(now): now})
             await redis_conn.expire(key, window_seconds)
             return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Redis rate limit error, falling back to memory: {e}")
 
     window_start = now - window_seconds
     _fallback_store[user_id] = [t for t in _fallback_store[user_id] if t > window_start]

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable, Coroutine
 from functools import wraps
 from typing import Any
 
@@ -13,13 +13,15 @@ ALL_ROLES = {"super_admin", "admin", "viewer"}
 ROLE_HIERARCHY = {"super_admin": 3, "admin": 2, "viewer": 1}
 
 
-def require_role(min_role: str) -> Callable[[Callable[..., Awaitable[None]]], Callable[..., Awaitable[None]]]:
-    def decorator(func: Callable[..., Awaitable[None]]) -> Callable[..., Awaitable[None]]:
+def require_role(
+    min_role: str,
+) -> Callable[[Callable[..., Coroutine[Any, Any, None]]], Callable[..., Coroutine[Any, Any, None]]]:
+    def decorator(func: Callable[..., Coroutine[Any, Any, None]]) -> Callable[..., Coroutine[Any, Any, None]]:
         @wraps(func)
         async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args: Any, **kwargs: Any) -> None:
             user = update.effective_user
             if not user:
-                return await func(update, context, *args, **kwargs)
+                return None
 
             admins = await get_collection("admins")
             admin = await admins.find_one({"telegram_id": user.id})

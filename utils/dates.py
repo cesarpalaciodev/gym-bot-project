@@ -17,7 +17,7 @@ def calcular_proximo_vencimiento(fecha_pago: date) -> date:
     ultimo_dia = calendar.monthrange(proximo.year, proximo.month)[1]
     dia_real = min(dia_pago, ultimo_dia)
 
-    return proximo.replace(day=dia_real)
+    return proximo.replace(day=dia_real)  # type: ignore[no-any-return]
 
 
 def calcular_dias_vencido(fecha_vencimiento: date) -> int:
@@ -48,7 +48,7 @@ def obtener_siguiente_fecha_pago(fecha_pago: date, es_tardio: bool) -> date:
 def calcular_due_date(fecha_base: date, dia_pago: int) -> date:
     vencimiento = fecha_base + relativedelta(months=1)
     max_dia = calendar.monthrange(vencimiento.year, vencimiento.month)[1]
-    return vencimiento.replace(day=min(dia_pago, max_dia))
+    return vencimiento.replace(day=min(dia_pago, max_dia))  # type: ignore[no-any-return]
 
 
 def get_ultimo_dia_mes(fecha: date) -> date:

@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from datetime import time
 
 import sentry_sdk
 from telegram import Update
-from telegram.error import TelegramError
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from config import SENTRY_DSN, TOKEN
 from database import init_collections
+from utils.auth import require_role
+from utils.migrate import apply_pending as run_migrations
 
 if SENTRY_DSN:
     sentry_sdk.init(
@@ -41,11 +41,17 @@ logger = logging.getLogger(__name__)
 async def setup_database() -> None:
     try:
         await init_collections()
+        await run_migrations()
     except (ConnectionError, OSError, ValueError) as e:
         logger.error(f"Error inicializando base de datos: {e}")
         raise
 
 
+async def post_init(application: Application) -> None:  # type: ignore[type-arg]
+    await setup_database()
+
+
+@require_role("admin")
 async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat = update.effective_chat
     user = update.effective_user
@@ -54,15 +60,6 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if chat.type == "private":
         await update.message.reply_text("Usa este comando en un grupo")
-        return
-
-    try:
-        member = await context.bot.get_chat_member(chat.id, user.id)
-        if member.status not in {"creator", "administrator"}:
-            await update.message.reply_text("No autorizado")
-            return
-    except TelegramError:
-        await update.message.reply_text("No autorizado")
         return
 
     from handlers import export
@@ -77,7 +74,8 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id if update.effective_user else 0
-    context.user_data.clear()
+    if context.user_data is not None:
+        context.user_data.clear()
     from handlers.admins import _del_state as del_admin_state
     from handlers.members import _del_state as del_member_state
     from handlers.payments import _del_state as del_payment_state
@@ -103,9 +101,8 @@ def run_dashboard() -> None:
 def main() -> None:
     logger.info("Iniciando bot...")
 
-    asyncio.run(setup_database())
-
-    app = Application.builder().token(TOKEN).build()
+    assert TOKEN, "TOKEN no configurado en .env"
+    app = Application.builder().token(TOKEN).post_init(post_init).build()
 
     job_queue = app.job_queue
     if job_queue:

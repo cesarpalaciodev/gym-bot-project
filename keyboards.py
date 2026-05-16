@@ -84,13 +84,3 @@ menu_confirmar = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True,
 )
-
-menu_principal_admin = ReplyKeyboardMarkup(
-    [
-        ["👥 Miembros", "💰 Pagos"],
-        ["📊 Reportes", "📈 Estadísticas"],
-        ["💾 Exportar", "⚙️ Administración"],
-        ["⬅️ Volver"],
-    ],
-    resize_keyboard=True,
-)

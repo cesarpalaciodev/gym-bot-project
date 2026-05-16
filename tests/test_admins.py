@@ -171,7 +171,7 @@ class TestProcesarAdmin:
         mock_collection.delete_one.return_value.deleted_count = 1
         await admins.procesar_admin(mock_update, mock_context)
         mock_collection.delete_one.assert_called_once_with({"telegram_id": FAKE_TARGET_ID})
-        mock_update.message.reply_text.assert_called_once_with("\u2705 Admin eliminado")
+        mock_update.message.reply_text.assert_called_once_with("Admin eliminado")
         assert FAKE_USER_ID not in admins.admin_state
 
     async def test_quitar_admin_not_found(self, mock_update, mock_context, mock_collection):

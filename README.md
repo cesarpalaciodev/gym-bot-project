@@ -1,349 +1,350 @@
-# Gym Management Telegram Bot
+# GymBot - Gym Management System
 
-A production-grade Telegram bot for managing gym members, payments, and expiration dates with MongoDB. Built with Python, async/await, and the python-telegram-bot framework.
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
+[![Tests](https://img.shields.io/badge/tests-352%20passing-green.svg)](./tests/)
+[![Coverage](https://img.shields.io/badge/coverage-84%25-brightgreen.svg)](./coverage_html/)
+[![Mypy](https://img.shields.io/badge/mypy-strict-brightgreen.svg)](./pyproject.toml)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-[![Test](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/test.yml/badge.svg)](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/test.yml)
-[![Security](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/security.yml/badge.svg)](https://github.com/cesarpalaciodev/gym-bot-project/actions/workflows/security.yml)
-[![codecov](https://codecov.io/gh/cesarpalaciodev/gym-bot-project/branch/main/graph/badge.svg)](https://codecov.io/gh/cesarpalaciodev/gym-bot-project)
-[![Dashboard](https://img.shields.io/badge/dashboard-FastAPI-009688)](http://localhost:4000)
+Enterprise-grade Telegram Bot + Web Dashboard for professional gym management. Membership control, payments, expirations, and reports with clean architecture.
 
----
-
-## Features
-
-- **Member management** — Add, search, delete (single & bulk)
-- **Payment tracking** — Grace period (1-4 days) and late payment logic
-- **Membership plans** — Monthly ($500), Quarterly ($1,350), Semi-annual ($2,500), Annual ($4,500)
-- **Payment history** — Per-member full history
-- **Overdue detection** — Automatic reports of late members
-- **Statistics dashboard** — Active members, monthly income, upcoming expirations
-- **Export** — Excel (members/payments), CSV, TXT summary
-- **Multi-admin system** — 3 roles (super_admin, admin, viewer)
-- **Daily notifications** — Automatic 5 AM summary to the group
-- **Audit logging** — Every CRUD operation logged for accountability
-- **Rate limiting** — Redis-backed (with in-memory fallback), persists across restarts
-- **State expiration** — In-progress flows auto-expire after 10 minutes
-- **Sentry error tracking** — Production error monitoring with stack traces
-- **Web dashboard** — FastAPI dashboard at `http://localhost:4000` with login, stats, members & payments HTML pages, and live API endpoints
+**Dashboard**: [http://localhost:8080](http://localhost:8080)  
+**API Docs**: [http://localhost:8080/docs](http://localhost:8080/docs)
 
 ---
 
-## Commands
+## Key Features
 
-| Command | Description |
-|---------|-------------|
-| `/start` | Start the bot |
-| `/help` | Show all commands |
-| `/backup` | Create manual Excel backup (group only) |
-| `/cancel` | Cancel any in-progress flow |
-| `/getgroupid` | Get the current group ID |
+### Telegram Bot
+- Member management (individual & bulk CRUD)
+- Payment registration with grace/late logic
+- 4 configurable membership plans
+- Multi-admin system with roles (super_admin, admin, viewer)
+- Automatic daily notifications (5 AM)
+- Distributed rate limiting with Redis
+- Export to Excel, CSV, TXT
 
-### Menu navigation
+### Web Dashboard (FastAPI)
+- Secure server-side session authentication
+- CSRF protection on all operations
+- Real-time statistics visualization
+- Documented REST API (OpenAPI)
+- Responsive Jinja2 design
 
-All features accessible via reply keyboard buttons. Main menu:
+### Enterprise Security
+- ✅ RBAC (Role-Based Access Control)
+- ✅ HMAC-SHA256 signed sessions
+- ✅ Security headers (HSTS, CSP, X-Frame-Options)
+- ✅ Distributed rate limiting
+- ✅ Audit logging for critical operations
+- ✅ Mypy strict mode
+- ✅ Bandit + Safety scanning
 
+---
+
+## Architecture
+
+### High-Level Diagram
+
+```mermaid
+graph TB
+    User[Telegram User] -->|Commands| Bot[Telegram Bot<br/>python-telegram-bot]
+    Admin[Web Admin] -->|HTTPS| Dashboard[FastAPI Dashboard]
+    
+    Bot -->|Async| Services[Service Layer<br/>Business Logic]
+    Dashboard -->|Async| Services
+    
+    Services -->|Motor| MongoDB[(MongoDB<br/>Sessions, Members, Payments)]
+    Services -.->|Optional| Redis[(Redis<br/>Rate Limiting)]
+    
+    Bot -->|WebSocket| TelegramAPI[Telegram API]
 ```
-👥 Miembers    💰 Payments
-📊 Reports     📈 Statistics
-💾 Export      ⚙️ Admin
-⬅️ Back
-```
+
+### Technology Stack
+
+| Layer | Technology |
+|------|-----------|
+| **Bot** | python-telegram-bot v21+ (async) |
+| **Dashboard** | FastAPI + Jinja2 + Uvicorn |
+| **Database** | MongoDB 7.0 with Motor (async) |
+| **Cache/Rate Limit** | Redis (optional, memory fallback) |
+| **Testing** | pytest + pytest-asyncio + coverage |
+| **Type Checking** | mypy strict mode |
+| **Linting** | ruff |
+| **CI/CD** | GitHub Actions |
+| **Deploy** | Docker + Docker Compose |
 
 ---
 
 ## Quick Start
 
-### Prerequisites
-
-- Python 3.11+
-- MongoDB instance (local or Atlas)
-
-### Setup
+### With Docker (Recommended)
 
 ```bash
-# Clone
+# Clone repository
 git clone https://github.com/cesarpalaciodev/gym-bot-project.git
 cd gym-bot-project
 
-# Virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate   # Windows
-
-# Install
-pip install -r requirements.txt
-
-# Environment
+# Configure environment variables
 cp .env.example .env
 # Edit .env with your credentials
+
+# Start services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f bot
 ```
 
-### Environment variables
-
-```env
-TOKEN=your_telegram_bot_token
-ADMIN_ID=your_telegram_user_id
-MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/gym
-GROUP_ID=-1001234567890
-SENTRY_DSN=https://key@o1.ingest.sentry.io/123   # Optional: error tracking
-REDIS_URL=redis://localhost:6379/0                  # Optional: persistent rate limiting
-DASHBOARD_PORT=4000                                 # Optional: web dashboard port
-```
-
-### Run
+### Manual Installation
 
 ```bash
+# Requirements: Python 3.11+, MongoDB
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env
+
+# Start
 python bot.py
 ```
 
 ---
 
-## Payment Logic
+## Configuration (.env)
 
+```env
+# Telegram
+TOKEN=your_bot_token_from_botfather
+ADMIN_ID=your_telegram_user_id
+GROUP_ID=-1001234567890  # Optional: notification group
+
+# MongoDB
+MONGO_URI=mongodb://admin:password@localhost:27017/gym
+MONGO_ROOT_PASSWORD=secure_password_here
+
+# Dashboard
+DASHBOARD_SECRET=random_secret_key_min_32_chars
+DASHBOARD_PORT=8080
+ENVIRONMENT=development  # Change to 'production' in prod
+
+# Optional
+REDIS_URL=redis://localhost:6379/0
+SENTRY_DSN=https://...  # Error tracking
 ```
-Payment day: user-chosen date (e.g., 15th)
-Due date: same day next month
-
-1-4 days overdue:
-  → GRACE PERIOD → Original due date preserved
-
-5+ days overdue:
-  → LATE → New due date = payment day + 1 month
-```
-
-### Edge cases handled
-
-- Months with fewer days (Jan 31 → Feb 28)
-- Year boundaries (Dec 10 → Jan 10)
-- Leap years (Jan 31 → Feb 29)
-- 31st day months (Mar 31 → Apr 30)
 
 ---
 
-## Membership Plans
+## Bot Commands
 
-| Plan | Price | Duration |
-|------|-------|----------|
-| Monthly | $500 | 1 month |
-| Quarterly | $1,350 | 3 months |
-| Semi-annual | $2,500 | 6 months |
-| Annual | $4,500 | 12 months |
+| Command | Description | Access |
+|---------|-------------|--------|
+| `/start` | Start bot and show menu | Everyone |
+| `/help` | List commands | Everyone |
+| `/backup` | Export data to Excel | Admin+ |
+| `/cancel` | Cancel current operation | Everyone |
+| `/getgroupid` | Get group ID | Admin+ |
 
----
+### Interactive Flows
 
-## Admin Roles
-
-| Role | Permissions |
-|------|-------------|
-| **super_admin** | Full access + manage other admins |
-| **admin** | Members, payments, reports, stats, export |
-| **viewer** | Read-only (reports, stats) |
-
----
-
-## Project Structure
-
-```
-gym_bot_project/
-├── bot.py                  # Entry point, application setup
-├── config.py               # Environment & app configuration
-│
-├── database/
-│   └── __init__.py         # MongoDB connection pooling & indexes
-│
-├── models/
-│   ├── member.py           # Member dataclass
-│   ├── payment.py          # Payment dataclass
-│   └── admin.py            # Admin dataclass
-│
-├── handlers/
-│   ├── start.py            # /start, /help, /getgroupid
-│   ├── members.py          # Member CRUD
-│   ├── payments.py         # Payment registration & history
-│   ├── reports.py          # Overdue list, Excel reports
-│   ├── stats.py            # Statistics dashboard
-│   ├── notifications.py    # Daily 5 AM notifications
-│   ├── admins.py           # Multi-admin management
-│   ├── export.py           # Excel, CSV, TXT exports
-│   └── button_handler.py   # Menu routing + rate limiting
-│
-├── utils/
-│   ├── dates.py            # Date math (grace, late, due dates)
-│   ├── auth.py             # Role-based authorization
-│   ├── audit.py            # Action audit logging
-│   └── cache.py            # LRU cache for plans & config
-│
-├── dashboard/
-│   ├── server.py            # FastAPI app with auth & routes
-│   ├── auth.py              # Session-based login via chat_id
-│   ├── static/              # Static assets (CSS)
-│   └── templates/           # Jinja2 HTML templates
-│
-├── keyboards.py            # All reply keyboard definitions
-├── tests/                  # Test suite (288 tests, 87% coverage)
-│
-├── requirements.txt
-├── pyproject.toml           # Build config + tool settings
-├── Makefile                # Dev workflow commands
-├── Dockerfile              # Multi-stage production build
-├── docker-compose.yml      # Bot + MongoDB services
-├── .pre-commit-config.yaml # Pre-commit hooks
-└── render.yaml             # Render deploy config
-```
+1. **Add Member**: Name Phone YYYY-MM-DD
+2. **Register Payment**: Select member → Plan → Confirm
+3. **Search**: Exact or partial name
+4. **Reports**: Debtors, full Excel
 
 ---
 
 ## Web Dashboard
 
-The project includes a FastAPI web dashboard at `http://localhost:4000` with:
+### Main Endpoints
 
-| Route | Description |
-|-------|-------------|
-| `/` | Protected dashboard with overview (active, grace, overdue, income) |
-| `/login` | Login via Telegram chat ID (`ADMIN_ID` env var or MongoDB admin) |
-| `/dashboard/stats` | Live stats (active members, income, change %) |
-| `/dashboard/members` | Active members table with status and due dates |
-| `/dashboard/payments` | Payment history with pagination |
-| `/dashboard/health` | System health status page |
-| `/api/stats` | Stats JSON endpoint (public) |
-| `/api/members` | Members JSON endpoint (public) |
-| `/api/payments` | Payments JSON endpoint (public) |
-| `/health` | Health check JSON endpoint (public) |
+| Route | Description | Auth |
+|------|-------------|------|
+| `/login` | Login with Telegram Chat ID | Public |
+| `/` | Main dashboard with statistics | Admin |
+| `/dashboard/members` | Active members list | Admin |
+| `/dashboard/payments` | Payment history | Admin |
+| `/api/stats` | API: statistics JSON | Admin |
+| `/api/members` | API: members JSON | Admin |
+| `/api/payments` | API: paginated payments | Admin |
+| `/docs` | OpenAPI documentation | Public |
 
-Auth uses signed cookies with 7-day sessions. The `ADMIN_ID` env var grants access; MongoDB admins also work.
+### Screenshots
 
----
-
-## Development
-
-### Prerequisites
-
-```bash
-pip install -r requirements.txt
-pip install pytest pytest-cov mypy ruff pre-commit bandit safety
-```
-
-### Makefile commands
-
-| Command | Description |
-|---------|-------------|
-| `make lint` | Run ruff linter |
-| `make format` | Auto-format with ruff |
-| `make typecheck` | Run mypy strict |
-| `make test` | Run pytest with coverage |
-| `make security` | Bandit + safety scan |
-| `make all` | lint + typecheck + test + security |
-| `make docker-build` | Build Docker image |
-| `make docker-up` | Start bot + MongoDB via compose |
-
-### Pre-commit hooks
-
-```bash
-make precommit-install
-```
-
-Runs ruff (lint + format) and mypy on every commit.
+[Dashboard]: Shows active members, grace period, overdue, and monthly income statistics.
+[Members]: Table with name, phone, status, expiration date, and overdue days.
 
 ---
 
-## Docker
+## Membership Plans
 
-### Build & run
-
-```bash
-docker-compose up --build -d
-```
-
-Starts bot + MongoDB 7 with persistent volume.
-
-### Multi-stage build
-
-```dockerfile
-FROM python:3.11-slim AS builder   # Install deps
-FROM python:3.11-slim AS runner    # Runtime only
-```
-
-Final image is ~180MB (slim).
+| Plan | Price | Duration | Savings |
+|------|--------|----------|--------|
+| Monthly | $500 | 1 month | - |
+| Quarterly | $1,350 | 3 months | 10% |
+| Semi-annual | $2,500 | 6 months | 17% |
+| Annual | $4,500 | 12 months | 25% |
 
 ---
 
-## CI/CD
+## Roles & Permissions
 
-Three GitHub Actions workflows:
-
-| Workflow | Trigger | Actions |
-|----------|---------|---------|
-| **test.yml** | push + PR | ruff → mypy → pytest (3.11 & 3.12) |
-| **security.yml** | weekly + main push | bandit → safety |
-| **docker.yml** | tags v* | Build & push to Docker Hub |
+| Role | Permissions |
+|-----|----------|
+| **super_admin** | Everything + admin management |
+| **admin** | Member/payment CRUD, reports, export |
+| **viewer** | Read-only (reports, statistics) |
 
 ---
 
 ## Testing
 
-**280 tests** with **77% code coverage** across the entire project:
+```bash
+# Run all tests
+make test
 
-| Module | Coverage | Tests |
-|--------|----------|-------|
-| `handlers/members.py` | 96% | 31 |
-| `handlers/payments.py` | 97% | 27 |
-| `handlers/stats.py` | 100% | 22 |
-| `handlers/button_handler.py` | 100% | 37 |
-| `handlers/reports.py` | 100% | 16 |
-| `handlers/export.py` | 100% | 17 |
-| `handlers/admins.py` | 100% | 26 |
-| `handlers/notifications.py` | 100% | 11 |
-| `handlers/start.py` | 100% | 15 |
-| `utils/dates.py` | 89% | 22 |
-| `config.py` | 100% | 14 |
-| `keyboards.py` | 100% | 10 |
-| `models/` | 95%+ | 14 |
-| `utils/cache.py` | 100% | 7 |
+# Specific tests
+pytest tests/test_members.py -v
+pytest tests/test_payments.py::TestProcesarPago -v
 
-### Test categories
+# With coverage
+pytest --cov=. --cov-report=html
 
-- **Unit tests** — Models, config, cache, keyboards, auth, dates
-- **Handler tests** — All 9 handler files with mocked Telegram API
-- **Integration** — 21 tests with real MongoDB via Testcontainers (Docker required)
-- **Database** — Connection, error handling, collection access
+# Integration tests (requires Docker)
+pytest -m integration
+```
 
-### Running tests
+**Stats**:
+- 352 passing tests
+- 84% code coverage
+- Unit + integration tests
+
+---
+
+## Development
+
+### Make Commands
 
 ```bash
-make test              # All tests + coverage report
-make test-integration  # Integration tests (needs Docker)
-pytest tests/test_members.py -v  # Single file
+make lint          # ruff linter
+make format        # ruff formatter
+make typecheck     # mypy strict
+make test          # pytest + coverage
+make security      # bandit + safety
+make all           # All above
+make docker-build  # Build Docker
+make docker-up     # Docker compose up
+```
+
+### Project Structure
+
+```
+gym_bot_project/
+├── bot.py                  # Entry point
+├── config.py               # Configuration
+├── requirements.txt        # Dependencies
+├── docker-compose.yml      # Orchestration
+│
+├── handlers/               # Telegram handlers
+│   ├── members.py
+│   ├── payments.py
+│   └── ...
+│
+├── services/               # Business logic
+│   ├── member_service.py
+│   ├── payment_service.py
+│   └── report_service.py
+│
+├── models/                 # Data models
+│   ├── member.py
+│   └── payment.py
+│
+├── dashboard/              # Web Dashboard
+│   ├── server.py          # FastAPI app
+│   ├── auth.py            # Authentication
+│   └── templates/         # Jinja2
+│
+├── utils/                  # Utilities
+│   ├── auth.py            # RBAC
+│   ├── rate_limit.py      # Rate limiting
+│   └── ...
+│
+├── tests/                  # Tests
+├── docs/                   # Documentation
+│   └── architecture/      # C4 diagrams, ADRs
+│
+└── .github/workflows/      # CI/CD
 ```
 
 ---
 
-## Deployment
+## Architectural Documentation
 
-### Render
+- [C4 Diagrams](./docs/architecture/diagrams/c4-diagrams.md) - Context, Containers, Components
+- [Architecture Decision Records (ADRs)](./docs/architecture/ADRs.md) - Why we made each decision
+- [Contributing Guide](./CONTRIBUTING.md) - How to contribute
+- [Changelog](./CHANGELOG.md) - Change history
 
-1. Push to GitHub
-2. Create Web Service on Render
-3. Connect repository, set env vars
-4. `render.yaml` auto-configures build & start
+---
 
-### Docker
+## CI/CD
 
-```bash
-docker build -t gym-bot:latest .
-docker run -d --env-file .env gym-bot:latest
-```
+| Workflow | Trigger | Actions |
+|----------|---------|----------|
+| **test.yml** | push, PR | lint → typecheck → test (3.11, 3.12) |
+| **security.yml** | push, PR, weekly | bandit → safety |
+| **docker.yml** | tags v* | Build, scan with Trivy, push to Docker Hub |
 
-### Security notes
+---
 
-- `.env` is gitignored — never commit credentials
-- Rate limiting prevents abuse (10 req / 5s)
-- Admin-only commands require role validation
-- Audit log tracks all operations
-- MongoDB connection uses TLS by default
-- Unique index on `admins.telegram_id` prevents duplicates
+## Security
+
+- **Authentication**: Server-side sessions with HMAC
+- **Authorization**: RBAC with 3 levels
+- **CSRF**: Protection on all mutations
+- **Rate Limiting**: 10 req/5s per user
+- **Headers**: HSTS, CSP, X-Frame-Options, etc.
+- **Secrets**: Never in code, always in .env
+- **Audit**: Logging of all critical operations
+
+---
+
+## Roadmap
+
+### v2.1.0 (Next)
+- [ ] Integration tests with TestContainers
+- [ ] MongoDB transactions
+- [ ] Prometheus metrics
+- [ ] API versioning
+
+### v3.0.0 (Future)
+- [ ] Mobile app
+- [ ] Multi-gym support
+- [ ] Payment gateway integration
+- [ ] ML for churn prediction
 
 ---
 
 ## License
 
-MIT — Cesar Palacio
+MIT © Cesar Palacio
+
+---
+
+## Support
+
+- Issues: [GitHub Issues](https://github.com/cesarpalaciodev/gym-bot-project/issues)
+- Email: gymbot@example.com
+- Discord: [Support Server](https://discord.gg/example)
+
+---
+
+**⭐ Star this repo if it's useful!**
