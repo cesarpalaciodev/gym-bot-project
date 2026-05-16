@@ -6,101 +6,81 @@
 [![Mypy](https://img.shields.io/badge/mypy-strict-brightgreen.svg)](./pyproject.toml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-Enterprise-grade Telegram Bot + Web Dashboard for professional gym management. Membership control, payments, expirations, and reports with clean architecture.
+Enterprise-grade Telegram Bot + Web Dashboard for professional gym management. Clean architecture with layered separation (handlers → services → repositories → providers).
 
 **Dashboard**: [http://localhost:8080](http://localhost:8080)  
 **API Docs**: [http://localhost:8080/docs](http://localhost:8080/docs)
 
 ---
 
-## Key Features
-
-### Telegram Bot
-- Member management (individual & bulk CRUD)
-- Payment registration with grace/late logic
-- 4 configurable membership plans
-- Multi-admin system with roles (super_admin, admin, viewer)
-- Automatic daily notifications (5 AM)
-- Distributed rate limiting with Redis
-- Export to Excel, CSV, TXT
-
-### Web Dashboard (FastAPI)
-- Secure server-side session authentication
-- CSRF protection on all operations
-- Real-time statistics visualization
-- Documented REST API (OpenAPI)
-- Responsive Jinja2 design
-
-### Enterprise Security
-- ✅ RBAC (Role-Based Access Control)
-- ✅ HMAC-SHA256 signed sessions
-- ✅ Security headers (HSTS, CSP, X-Frame-Options)
-- ✅ Distributed rate limiting
-- ✅ Audit logging for critical operations
-- ✅ Mypy strict mode
-- ✅ Bandit + Safety scanning
-
----
-
 ## Architecture
 
-### High-Level Diagram
+### Layered Architecture (Clean)
 
-```mermaid
-graph TB
-    User[Telegram User] -->|Commands| Bot[Telegram Bot<br/>python-telegram-bot]
-    Admin[Web Admin] -->|HTTPS| Dashboard[FastAPI Dashboard]
-    
-    Bot -->|Async| Services[Service Layer<br/>Business Logic]
-    Dashboard -->|Async| Services
-    
-    Services -->|Motor| MongoDB[(MongoDB<br/>Sessions, Members, Payments)]
-    Services -.->|Optional| Redis[(Redis<br/>Rate Limiting)]
-    
-    Bot -->|WebSocket| TelegramAPI[Telegram API]
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     PRESENTATION LAYER                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   Telegram   │  │   Dashboard  │  │     API      │      │
+│  │   Handlers   │  │   (FastAPI)  │  │   (REST)     │      │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
+└─────────┼─────────────────┼─────────────────┼──────────────┘
+          │                 │                 │
+          └─────────────────┴─────────────────┘
+                            │
+┌───────────────────────────▼────────────────────────────────┐
+│                    BUSINESS LAYER                          │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │                    Services                           │  │
+│  │  (MemberService, PaymentService, ExportService, ...)  │  │
+│  └──────────────────────────────────────────────────────┘  │
+└───────────────────────────┬────────────────────────────────┘
+                            │
+┌───────────────────────────▼────────────────────────────────┐
+│                     DATA LAYER                             │
+│  ┌──────────────────┐  ┌──────────────────────────────┐   │
+│  │  Repositories    │  │         Providers            │   │
+│  │  (MongoDB)       │  │  (Telegram, Database APIs)   │   │
+│  └──────────────────┘  └──────────────────────────────┘   │
+└────────────────────────────────────────────────────────────┘
 ```
 
-### Technology Stack
+### Key Features
 
-| Layer | Technology |
-|------|-----------|
-| **Bot** | python-telegram-bot v21+ (async) |
-| **Dashboard** | FastAPI + Jinja2 + Uvicorn |
-| **Database** | MongoDB 7.0 with Motor (async) |
-| **Cache/Rate Limit** | Redis (optional, memory fallback) |
-| **Testing** | pytest + pytest-asyncio + coverage |
-| **Type Checking** | mypy strict mode |
-| **Linting** | ruff |
-| **CI/CD** | GitHub Actions |
-| **Deploy** | Docker + Docker Compose |
+- **Layered Architecture**: Clear separation of concerns
+- **Dependency Injection**: Services use repositories, repositories use providers
+- **Professional Logging**: Structured JSON logs, colored console output
+- **Centralized Error Handling**: AppError hierarchy with error codes
+- **External API Abstraction**: Providers with retry logic and normalization
+- **Type Safety**: Full mypy strict mode coverage
+- **Testing**: 352 tests with 84% coverage
 
 ---
 
 ## Quick Start
 
-### With Docker (Recommended)
+### Using Docker (Recommended)
 
 ```bash
 # Clone repository
 git clone https://github.com/cesarpalaciodev/gym-bot-project.git
 cd gym-bot-project
 
-# Configure environment variables
+# Copy environment file
 cp .env.example .env
-# Edit .env with your credentials
+# Edit .env with your configuration
 
-# Start services
-docker-compose up -d
+# Start with Docker
+chmod +x scripts/docker.sh
+./scripts/docker.sh up
 
 # View logs
-docker-compose logs -f bot
+./scripts/docker.sh logs
 ```
 
 ### Manual Installation
 
 ```bash
-# Requirements: Python 3.11+, MongoDB
-
 # Create virtual environment
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
@@ -109,12 +89,121 @@ source .venv/bin/activate  # Linux/Mac
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure environment
+# Setup environment
 cp .env.example .env
 # Edit .env
 
-# Start
-python bot.py
+# Run
+./scripts/start.sh
+```
+
+---
+
+## Project Structure
+
+```
+gym_bot_project/
+├── bot.py                      # Entry point
+├── config.py                   # Configuration
+├── requirements.txt            # Dependencies
+├── Dockerfile                  # Container image
+├── docker-compose.yml          # Orchestration
+├── .env.example               # Environment template
+├── .prettierrc                # Code formatting
+├── pyproject.toml             # Tool configuration
+│
+├── core/                      # Core utilities
+│   ├── logging.py            # Professional logging
+│   ├── errors.py             # AppError hierarchy
+│   └── error_handler.py      # Centralized error handling
+│
+├── handlers/                  # Telegram handlers
+│   ├── members.py
+│   ├── payments.py
+│   └── ...
+│
+├── services/                  # Business logic
+│   ├── member_service.py
+│   ├── payment_service.py
+│   ├── export_service.py
+│   └── ...
+│
+├── repositories/              # Data access layer
+│   ├── member_repository.py
+│   ├── payment_repository.py
+│   └── ...
+│
+├── providers/                 # External API abstraction
+│   ├── telegram_provider.py
+│   ├── database_provider.py
+│   └── ...
+│
+├── models/                    # Data models
+│   ├── member.py
+│   ├── payment.py
+│   └── admin.py
+│
+├── dashboard/                 # Web Dashboard
+│   ├── server.py             # FastAPI app
+│   └── templates/            # Jinja2 templates
+│
+├── scripts/                   # Utility scripts
+│   ├── start.sh
+│   ├── test.sh
+│   ├── lint.sh
+│   └── docker.sh
+│
+├── tests/                     # Test suite
+├── docs/                      # Documentation
+│   └── architecture/         # ADRs, C4 diagrams
+│
+└── migrations/                # DB migrations
+```
+
+---
+
+## Development
+
+### Available Scripts
+
+```bash
+# Start the application
+./scripts/start.sh
+
+# Run tests with coverage
+./scripts/test.sh
+
+# Run linting and type checking
+./scripts/lint.sh
+
+# Docker management
+./scripts/docker.sh up      # Start containers
+./scripts/docker.sh down    # Stop containers
+./scripts/docker.sh build   # Rebuild images
+./scripts/docker.sh logs    # View logs
+
+# Database migrations
+./scripts/migrate.sh status     # Check migration status
+./scripts/migrate.sh upgrade    # Apply pending migrations
+./scripts/migrate.sh downgrade  # Rollback migrations
+```
+
+### Code Quality
+
+```bash
+# Linting
+make lint          # ruff check
+make format        # ruff format
+
+# Type checking
+make typecheck     # mypy strict
+
+# Testing
+make test          # pytest with coverage
+make security      # bandit + safety
+
+# All checks
+make all           # lint + typecheck + test + security
 ```
 
 ---
@@ -122,86 +211,59 @@ python bot.py
 ## Configuration (.env)
 
 ```env
-# Telegram
+# Required
 TOKEN=your_bot_token_from_botfather
 ADMIN_ID=your_telegram_user_id
-GROUP_ID=-1001234567890  # Optional: notification group
-
-# MongoDB
 MONGO_URI=mongodb://admin:password@localhost:27017/gym
-MONGO_ROOT_PASSWORD=secure_password_here
-
-# Dashboard
-DASHBOARD_SECRET=random_secret_key_min_32_chars
-DASHBOARD_PORT=8080
-ENVIRONMENT=development  # Change to 'production' in prod
+DASHBOARD_SECRET=random_secret_key
 
 # Optional
+DASHBOARD_PORT=8080
+ENVIRONMENT=development
 REDIS_URL=redis://localhost:6379/0
-SENTRY_DSN=https://...  # Error tracking
+SENTRY_DSN=
 ```
 
----
-
-## Bot Commands
-
-| Command | Description | Access |
-|---------|-------------|--------|
-| `/start` | Start bot and show menu | Everyone |
-| `/help` | List commands | Everyone |
-| `/backup` | Export data to Excel | Admin+ |
-| `/cancel` | Cancel current operation | Everyone |
-| `/getgroupid` | Get group ID | Admin+ |
-
-### Interactive Flows
-
-1. **Add Member**: Name Phone YYYY-MM-DD
-2. **Register Payment**: Select member → Plan → Confirm
-3. **Search**: Exact or partial name
-4. **Reports**: Debtors, full Excel
+See `.env.example` for complete configuration options.
 
 ---
 
-## Web Dashboard
+## Architecture Highlights
 
-### Main Endpoints
+### Error Handling
 
-| Route | Description | Auth |
-|------|-------------|------|
-| `/login` | Login with Telegram Chat ID | Public |
-| `/` | Main dashboard with statistics | Admin |
-| `/dashboard/members` | Active members list | Admin |
-| `/dashboard/payments` | Payment history | Admin |
-| `/api/stats` | API: statistics JSON | Admin |
-| `/api/members` | API: members JSON | Admin |
-| `/api/payments` | API: paginated payments | Admin |
-| `/docs` | OpenAPI documentation | Public |
+All errors are standardized using `AppError` hierarchy:
 
-### Screenshots
+```python
+from core.errors import ValidationError, NotFoundError
 
-[Dashboard]: Shows active members, grace period, overdue, and monthly income statistics.
-[Members]: Table with name, phone, status, expiration date, and overdue days.
+raise ValidationError("Invalid email format")
+raise NotFoundError("Member", member_id=123)
+```
 
----
+### Logging
 
-## Membership Plans
+Professional logging with structured output:
 
-| Plan | Price | Duration | Savings |
-|------|--------|----------|--------|
-| Monthly | $500 | 1 month | - |
-| Quarterly | $1,350 | 3 months | 10% |
-| Semi-annual | $2,500 | 6 months | 17% |
-| Annual | $4,500 | 12 months | 25% |
+```python
+from core import get_logger
 
----
+logger = get_logger(__name__)
+logger.info("Operation completed", extra={"user_id": 123})
+```
 
-## Roles & Permissions
+### External APIs
 
-| Role | Permissions |
-|-----|----------|
-| **super_admin** | Everything + admin management |
-| **admin** | Member/payment CRUD, reports, export |
-| **viewer** | Read-only (reports, statistics) |
+Providers abstract external services with retry logic:
+
+```python
+from providers import TelegramProvider, DatabaseProvider
+
+tg = TelegramProvider()
+response = await tg.send_message(chat_id, "Hello")
+if response.is_success:
+    data = response.data
+```
 
 ---
 
@@ -211,14 +273,13 @@ SENTRY_DSN=https://...  # Error tracking
 # Run all tests
 make test
 
-# Specific tests
+# Run specific test file
 pytest tests/test_members.py -v
-pytest tests/test_payments.py::TestProcesarPago -v
 
-# With coverage
+# Run with coverage report
 pytest --cov=. --cov-report=html
 
-# Integration tests (requires Docker)
+# Integration tests (requires MongoDB)
 pytest -m integration
 ```
 
@@ -229,122 +290,29 @@ pytest -m integration
 
 ---
 
-## Development
+## Deployment
 
-### Make Commands
+### Docker Production
 
 ```bash
-make lint          # ruff linter
-make format        # ruff formatter
-make typecheck     # mypy strict
-make test          # pytest + coverage
-make security      # bandit + safety
-make all           # All above
-make docker-build  # Build Docker
-make docker-up     # Docker compose up
+# Build production image
+docker build -t gym-bot:latest .
+
+# Run with docker-compose
+docker-compose -f docker-compose.yml up -d
 ```
 
-### Project Structure
+### Environment Variables for Production
 
+```env
+ENVIRONMENT=production
+LOG_LEVEL=INFO
+JSON_LOGS=true
+SENTRY_DSN=https://...
 ```
-gym_bot_project/
-├── bot.py                  # Entry point
-├── config.py               # Configuration
-├── requirements.txt        # Dependencies
-├── docker-compose.yml      # Orchestration
-│
-├── handlers/               # Telegram handlers
-│   ├── members.py
-│   ├── payments.py
-│   └── ...
-│
-├── services/               # Business logic
-│   ├── member_service.py
-│   ├── payment_service.py
-│   └── report_service.py
-│
-├── models/                 # Data models
-│   ├── member.py
-│   └── payment.py
-│
-├── dashboard/              # Web Dashboard
-│   ├── server.py          # FastAPI app
-│   ├── auth.py            # Authentication
-│   └── templates/         # Jinja2
-│
-├── utils/                  # Utilities
-│   ├── auth.py            # RBAC
-│   ├── rate_limit.py      # Rate limiting
-│   └── ...
-│
-├── tests/                  # Tests
-├── docs/                   # Documentation
-│   └── architecture/      # C4 diagrams, ADRs
-│
-└── .github/workflows/      # CI/CD
-```
-
----
-
-## Architectural Documentation
-
-- [C4 Diagrams](./docs/architecture/diagrams/c4-diagrams.md) - Context, Containers, Components
-- [Architecture Decision Records (ADRs)](./docs/architecture/ADRs.md) - Why we made each decision
-- [Contributing Guide](./CONTRIBUTING.md) - How to contribute
-- [Changelog](./CHANGELOG.md) - Change history
-
----
-
-## CI/CD
-
-| Workflow | Trigger | Actions |
-|----------|---------|----------|
-| **test.yml** | push, PR | lint → typecheck → test (3.11, 3.12) |
-| **security.yml** | push, PR, weekly | bandit → safety |
-| **docker.yml** | tags v* | Build, scan with Trivy, push to Docker Hub |
-
----
-
-## Security
-
-- **Authentication**: Server-side sessions with HMAC
-- **Authorization**: RBAC with 3 levels
-- **CSRF**: Protection on all mutations
-- **Rate Limiting**: 10 req/5s per user
-- **Headers**: HSTS, CSP, X-Frame-Options, etc.
-- **Secrets**: Never in code, always in .env
-- **Audit**: Logging of all critical operations
-
----
-
-## Roadmap
-
-### v2.1.0 (Next)
-- [ ] Integration tests with TestContainers
-- [ ] MongoDB transactions
-- [ ] Prometheus metrics
-- [ ] API versioning
-
-### v3.0.0 (Future)
-- [ ] Mobile app
-- [ ] Multi-gym support
-- [ ] Payment gateway integration
-- [ ] ML for churn prediction
 
 ---
 
 ## License
 
 MIT © Cesar Palacio
-
----
-
-## Support
-
-- Issues: [GitHub Issues](https://github.com/cesarpalaciodev/gym-bot-project/issues)
-- Email: gymbot@example.com
-- Discord: [Support Server](https://discord.gg/example)
-
----
-
-**⭐ Star this repo if it's useful!**

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import os
 from datetime import time
 
@@ -9,9 +8,14 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from config import SENTRY_DSN, TOKEN
+from core.logging import ensure_logging_configured, get_logger, setup_logging
 from database import init_collections
 from utils.auth import require_role
 from utils.migrate import apply_pending as run_migrations
+
+# Setup professional logging
+setup_logging(level="INFO", json_logs=False)
+logger = get_logger(__name__)
 
 if SENTRY_DSN:
     sentry_sdk.init(
@@ -19,7 +23,6 @@ if SENTRY_DSN:
         traces_sample_rate=0.1,
         environment=os.getenv("ENVIRONMENT", "production"),
     )
-    logger = logging.getLogger(__name__)
     logger.info("Sentry initialized")
 from handlers import (
     botones,
@@ -119,7 +122,7 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, botones))
 
     logger.info("Bot iniciado")
-    print("Bot corriendo...", flush=True)
+    logger.info("Bot corriendo en modo polling")
 
     import threading
 

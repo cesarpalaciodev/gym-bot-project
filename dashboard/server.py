@@ -379,6 +379,7 @@ async def health_page(request: Request) -> Any:
         await db.find_one({}, {"_id": 1})
         db_status = "connected"
     except Exception:
+        logger.exception("Health check failed for health page")
         db_status = "disconnected"
     return templates.TemplateResponse(
         request,
@@ -394,6 +395,7 @@ async def health() -> dict[str, str]:
         await db.find_one({}, {"_id": 1})
         db_status = "connected"
     except Exception:
+        logger.exception("Health check failed")
         db_status = "disconnected"
     return {"status": "ok", "db": db_status}
 

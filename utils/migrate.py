@@ -138,29 +138,29 @@ async def status() -> list[dict[str, Any]]:
 async def _cmd_upgrade() -> None:
     applied = await apply_pending()
     if applied:
-        print(f"Migraciones aplicadas: {applied}")
+        logger.info(f"Migraciones aplicadas: {applied}")
     else:
-        print("Todo actualizado")
+        logger.info("Todo actualizado")
 
 
 async def _cmd_downgrade(steps: int) -> None:
     rolled = await rollback(steps)
     if rolled:
-        print(f"Migraciones revertidas: {rolled}")
+        logger.info(f"Migraciones revertidas: {rolled}")
     else:
-        print("Nada que revertir")
+        logger.info("Nada que revertir")
 
 
 async def _cmd_status() -> None:
     rows = await status()
     if not rows:
-        print("No hay migraciones definidas")
+        logger.info("No hay migraciones definidas")
         return
-    print(f"{'Versión':<10} {'Aplicada':<10} {'Descripción'}")
-    print("-" * 60)
+    logger.info(f"{'Versión':<10} {'Aplicada':<10} {'Descripción'}")
+    logger.info("-" * 60)
     for row in rows:
         applied = "SI" if row["applied"] else "NO"
-        print(f"{row['version']:<10} {applied:<10} {row['description']}")
+        logger.info(f"{row['version']:<10} {applied:<10} {row['description']}")
 
 
 def main() -> None:

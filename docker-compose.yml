@@ -1,15 +1,33 @@
+version: "3.8"
+
 services:
   bot:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: gym-bot
     restart: unless-stopped
     env_file: .env
+    environment:
+      ENVIRONMENT: production
+      DASHBOARD_HOST: 0.0.0.0
     depends_on:
       mongo:
         condition: service_healthy
+    ports:
+      - "8080:8080"
     volumes:
       - ./logs:/app/logs
       - ./reports:/app/reports
+      - ./data:/app/data
+    networks:
+      - gym-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   mongo:
     image: mongo:7
@@ -23,11 +41,40 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-changeme}
     volumes:
       - mongo_data:/data/db
+    networks:
+      - gym-network
     healthcheck:
-      test: mongosh -u admin -p ${MONGO_ROOT_PASSWORD:-changeme} --eval "db.adminCommand('ping')"
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+
+  # Optional: Redis for distributed rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: gym-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - gym-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    profiles:
+      - with-redis
 
 volumes:
   mongo_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  gym-network:
+    driver: bridge

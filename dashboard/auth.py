@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import os
 import secrets
 import time
@@ -12,6 +13,8 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 
 from config import ADMIN_ID
 from database import get_collection
+
+logger = logging.getLogger(__name__)
 
 SECRET_KEY = os.getenv("DASHBOARD_SECRET", secrets.token_hex(32))
 COOKIE_NAME = "gym_session"
@@ -64,7 +67,7 @@ async def _verify_admin(chat_id: int) -> dict[str, Any] | None:
         if admin:
             return {"chat_id": chat_id, "name": admin.get("name", str(chat_id))}
     except Exception:
-        pass
+        logger.exception("Error verifying admin")
     return None
 
 
