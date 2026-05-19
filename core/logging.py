@@ -119,7 +119,7 @@ def setup_logging(
 
     console_format = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
     if console_colors:
-        console_formatter = ColoredFormatter(console_format)
+        console_formatter: logging.Formatter = ColoredFormatter(console_format)
     else:
         console_formatter = logging.Formatter(console_format)
     console_handler.setFormatter(console_formatter)
@@ -133,7 +133,7 @@ def setup_logging(
     file_handler.setLevel(logging.DEBUG)
 
     if json_logs:
-        file_formatter = JSONFormatter()
+        file_formatter: logging.Formatter = JSONFormatter()
     else:
         file_formatter = logging.Formatter(
             "%(asctime)s | %(levelname)-8s | %(name)s | %(module)s:%(lineno)d | %(message)s"
@@ -168,7 +168,7 @@ def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
 
 
-class ContextAdapter(logging.LoggerAdapter):
+class ContextAdapter(logging.LoggerAdapter):  # type: ignore[type-arg]
     """Logger adapter that adds context to all log messages."""
 
     def __init__(
@@ -178,7 +178,7 @@ class ContextAdapter(logging.LoggerAdapter):
     ) -> None:
         super().__init__(logger, context)
 
-    def process(
+    def process(  # type: ignore[override]
         self,
         msg: str,
         kwargs: dict[str, Any],
@@ -193,7 +193,7 @@ class ContextAdapter(logging.LoggerAdapter):
 def log_execution_time(
     logger: logging.Logger | None = None,
     level: int = logging.DEBUG,
-) -> callable:
+) -> Any:
     """Decorator to log function execution time.
 
     Args:
@@ -204,12 +204,12 @@ def log_execution_time(
         Decorator function
     """
 
-    def decorator(func: callable) -> callable:
+    def decorator(func: Any) -> Any:
         import functools
         import time
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             log = logger or logging.getLogger(func.__module__)
             start = time.time()
             try:

@@ -5,10 +5,10 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from database import get_collection
 from keyboards import (
     menu_principal,
 )
+from services import get_admin_service
 from utils import check_rate_limit, es_admin_grupo
 
 from . import admins, export, members, payments, reports, stats
@@ -79,9 +79,8 @@ async def botones(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await export.exportar_txt_resumen(update, context)
         elif texto == "⚙️ Administración":
             if user_id:
-                admins_col = await get_collection("admins")
-                admin = await admins_col.find_one({"telegram_id": user_id})
-                if admin and admin.get("role") == "super_admin":
+                svc = await get_admin_service()
+                if await svc.is_super_admin(user_id):
                     await admins.menu_admins(update, context)
                 else:
                     await update.message.reply_text("Solo Super Admin puede acceder")

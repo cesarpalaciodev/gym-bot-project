@@ -1,8 +1,8 @@
 # GymBot - Gym Management System
 
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-352%20passing-green.svg)](./tests/)
-[![Coverage](https://img.shields.io/badge/coverage-84%25-brightgreen.svg)](./coverage_html/)
+[![Tests](https://img.shields.io/badge/tests-472%20passing-green.svg)](./tests/)
+[![Coverage](https://img.shields.io/badge/coverage-75%25-yellowgreen.svg)](./coverage_html/)
 [![Mypy](https://img.shields.io/badge/mypy-strict-brightgreen.svg)](./pyproject.toml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
@@ -52,8 +52,8 @@ Enterprise-grade Telegram Bot + Web Dashboard for professional gym management. C
 - **Professional Logging**: Structured JSON logs, colored console output
 - **Centralized Error Handling**: AppError hierarchy with error codes
 - **External API Abstraction**: Providers with retry logic and normalization
-- **Type Safety**: Full mypy strict mode coverage
-- **Testing**: 352 tests with 84% coverage
+- **Type Safety**: Full mypy strict mode (0 errors across 39 source files)
+- **Testing**: 472 tests with 75% coverage across all layers
 
 ---
 
@@ -117,35 +117,51 @@ gym_bot_project/
 │   ├── errors.py             # AppError hierarchy
 │   └── error_handler.py      # Centralized error handling
 │
-├── handlers/                  # Telegram handlers
-│   ├── members.py
-│   ├── payments.py
-│   └── ...
+├── handlers/                  # Telegram handlers (presentation)
+│   ├── start.py              # /start, /help, /getgroupid
+│   ├── members.py            # Member CRUD + bulk operations
+│   ├── payments.py           # Payment registration + history
+│   ├── reports.py            # Overdue report, Excel generation
+│   ├── stats.py              # Member stats, income, expirations
+│   ├── notifications.py      # 5 AM daily group notification
+│   ├── admins.py             # Multi-admin CRUD + role management
+│   ├── export.py             # Excel, TXT, CSV exports
+│   └── button_handler.py     # Menu routing + rate limiting
 │
-├── services/                  # Business logic
-│   ├── member_service.py
-│   ├── payment_service.py
-│   ├── export_service.py
-│   └── ...
+├── services/                  # Business logic layer
+│   ├── factory.py            # Dependency injection factory
+│   ├── member_service.py     # Member business logic
+│   ├── payment_service.py    # Payment registration rules
+│   ├── report_service.py     # Report generation
+│   ├── stats_service.py      # Statistics calculations
+│   ├── notification_service.py # Daily notification logic
+│   ├── admin_service.py      # Admin management logic
+│   └── export_service.py     # File export business logic
 │
-├── repositories/              # Data access layer
-│   ├── member_repository.py
-│   ├── payment_repository.py
-│   └── ...
+├── repositories/              # Data access layer (MongoDB)
+│   ├── base.py               # Generic CRUD repository
+│   ├── member_repository.py  # Member collection ops
+│   ├── payment_repository.py # Payment collection ops
+│   ├── admin_repository.py   # Admin collection ops
+│   └── audit_repository.py   # Audit log collection ops
 │
 ├── providers/                 # External API abstraction
-│   ├── telegram_provider.py
-│   ├── database_provider.py
-│   └── ...
+│   ├── base.py               # Abstract provider interface
+│   ├── exceptions.py         # Provider error hierarchy (7 classes)
+│   ├── response.py           # ProviderResponse normalization
+│   ├── retry_config.py       # Retry strategies with tenacity
+│   ├── telegram_provider.py  # Telegram Bot API wrapper
+│   └── database_provider.py  # MongoDB wrapper with retries
 │
-├── models/                    # Data models
+├── models/                    # Data models (dataclasses)
 │   ├── member.py
 │   ├── payment.py
 │   └── admin.py
 │
-├── dashboard/                 # Web Dashboard
-│   ├── server.py             # FastAPI app
-│   └── templates/            # Jinja2 templates
+├── dashboard/                 # Web Dashboard (FastAPI)
+│   ├── server.py             # App with 6 pages + 5 API endpoints
+│   ├── auth.py               # HMAC session authentication
+│   └── templates/            # Jinja2 + Tailwind CSS templates
 │
 ├── scripts/                   # Utility scripts
 │   ├── start.sh
@@ -153,7 +169,16 @@ gym_bot_project/
 │   ├── lint.sh
 │   └── docker.sh
 │
-├── tests/                     # Test suite
+├── tests/                     # Test suite (472 tests, 75% coverage)
+│   ├── test_providers.py    # 58 tests: exceptions, response, retry, base
+│   ├── test_services.py     # 51 tests: admin, stats, notification services
+│   ├── test_admins.py       # 26 tests
+│   ├── test_button_handler.py # 42 tests
+│   ├── test_export.py       # 17 tests
+│   ├── test_notifications.py # 11 tests
+│   ├── test_stats.py        # 11 tests
+│   └── ...                  # 15 more test files
+│
 ├── docs/                      # Documentation
 │   └── architecture/         # ADRs, C4 diagrams
 │
@@ -284,9 +309,10 @@ pytest -m integration
 ```
 
 **Stats**:
-- 352 passing tests
-- 84% code coverage
-- Unit + integration tests
+- 472 passing tests (1 requires MongoDB)
+- 75% overall code coverage
+- 109 tests dedicated to providers + services layers
+- Unit + integration tests across all layers
 
 ---
 

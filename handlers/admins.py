@@ -2,15 +2,13 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime
 from typing import Any
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from database import get_collection
 from keyboards import menu_admin
-from models import Admin
+from services import get_admin_service
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +41,9 @@ async def menu_admins(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if not update.effective_user or not update.message:
         return
     user_id = update.effective_user.id
-    admins_col = await get_collection("admins")
-    admin = await admins_col.find_one({"telegram_id": user_id})
+    svc = await get_admin_service()
 
-    if not admin or admin["role"] != "super_admin":
+    if not await svc.is_super_admin(user_id):
         await update.message.reply_text("Solo Super Admin puede acceder")
         return
 
@@ -57,10 +54,9 @@ async def agregar_admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not update.effective_user or not update.message:
         return
     user_id = update.effective_user.id
-    admins_col = await get_collection("admins")
-    admin = await admins_col.find_one({"telegram_id": user_id})
+    svc = await get_admin_service()
 
-    if not admin or admin["role"] != "super_admin":
+    if not await svc.is_super_admin(user_id):
         await update.message.reply_text("Solo Super Admin puede acceder")
         return
 
@@ -75,14 +71,13 @@ async def lista_admins(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if not update.effective_user or not update.message:
         return
     user_id = update.effective_user.id
-    admins_col = await get_collection("admins")
-    admin = await admins_col.find_one({"telegram_id": user_id})
+    svc = await get_admin_service()
 
-    if not admin or admin["role"] != "super_admin":
+    if not await svc.is_super_admin(user_id):
         await update.message.reply_text("Solo Super Admin puede acceder")
         return
 
-    all_admins = await admins_col.find({}).to_list(None)
+    all_admins = await svc.list_all_admins()
 
     if not all_admins:
         await update.message.reply_text("No hay admins registrados")
@@ -90,10 +85,10 @@ async def lista_admins(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     msg = "ADMINISTRADORES:\n\n"
     for a in all_admins:
-        role_emoji = {"super_admin": "", "admin": "", "viewer": ""}.get(a["role"], "")
-        msg += f"{role_emoji} {a['name']}\n"
-        msg += f"   ID: {a['telegram_id']}\n"
-        msg += f"   Rol: {a['role']}\n\n"
+        role_emoji = {"super_admin": "", "admin": "", "viewer": ""}.get(a.role, "")
+        msg += f"{role_emoji} {a.name}\n"
+        msg += f"   ID: {a.telegram_id}\n"
+        msg += f"   Rol: {a.role}\n\n"
 
     await update.message.reply_text(msg)
 
@@ -102,10 +97,9 @@ async def quitar_admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not update.effective_user or not update.message:
         return
     user_id = update.effective_user.id
-    admins_col = await get_collection("admins")
-    admin = await admins_col.find_one({"telegram_id": user_id})
+    svc = await get_admin_service()
 
-    if not admin or admin["role"] != "super_admin":
+    if not await svc.is_super_admin(user_id):
         await update.message.reply_text("Solo Super Admin puede acceder")
         return
 
@@ -118,10 +112,9 @@ async def cambiar_rol_start(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if not update.effective_user or not update.message:
         return
     user_id = update.effective_user.id
-    admins_col = await get_collection("admins")
-    admin = await admins_col.find_one({"telegram_id": user_id})
+    svc = await get_admin_service()
 
-    if not admin or admin["role"] != "super_admin":
+    if not await svc.is_super_admin(user_id):
         await update.message.reply_text("Solo Super Admin puede acceder")
         return
 
@@ -141,19 +134,18 @@ async def procesar_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if user_id not in admin_state:
         return
 
-    admins_col = await get_collection("admins")
+    svc = await get_admin_service()
     estado = admin_state[user_id]
 
     try:
         if estado == "agregar_admin":
-            try:
-                telegram_id = int(texto.strip())
-            except ValueError:
+            telegram_id = await svc.validate_telegram_id(texto)
+            if telegram_id is None:
                 await update.message.reply_text("ID invalido. Debe ser un numero.")
                 _del_state(user_id)
                 return
 
-            if await admins_col.find_one({"telegram_id": telegram_id}):
+            if await svc.is_admin(telegram_id):
                 await update.message.reply_text("Este usuario ya es admin")
                 _del_state(user_id)
                 return
@@ -162,23 +154,21 @@ async def procesar_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await update.message.reply_text("Ingresa el nombre del nuevo admin:")
 
         elif isinstance(estado, dict) and estado.get("step") == "agregar_nombre":
-            nuevo_admin = Admin(telegram_id=admin_state[user_id]["telegram_id"], name=texto, role="admin")
-            await admins_col.insert_one(nuevo_admin.to_dict())
+            telegram_id = estado["telegram_id"]
+            await svc.add_admin(telegram_id, texto, role="admin")
 
-            await update.message.reply_text(f"Admin agregado:\n{texto}\n{nuevo_admin.telegram_id}\nRol: admin")
+            await update.message.reply_text(f"Admin agregado:\n{texto}\n{telegram_id}\nRol: admin")
             _del_state(user_id)
 
         elif estado == "quitar_admin":
-            try:
-                telegram_id = int(texto.strip())
-            except ValueError:
+            telegram_id = await svc.validate_telegram_id(texto)
+            if telegram_id is None:
                 await update.message.reply_text("ID invalido")
                 _del_state(user_id)
                 return
 
-            result = await admins_col.delete_one({"telegram_id": telegram_id})
-
-            if result.deleted_count > 0:
+            removed = await svc.remove_admin(telegram_id)
+            if removed:
                 await update.message.reply_text("Admin eliminado")
             else:
                 await update.message.reply_text("Admin no encontrado")
@@ -186,28 +176,23 @@ async def procesar_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             _del_state(user_id)
 
         elif estado == "cambiar_rol_id":
-            try:
-                telegram_id = int(texto.strip())
-            except ValueError:
+            telegram_id = await svc.validate_telegram_id(texto)
+            if telegram_id is None:
                 await update.message.reply_text("ID invalido")
                 _del_state(user_id)
                 return
 
-            target_admin = await admins_col.find_one({"telegram_id": telegram_id})
+            target = await svc.get_admin_display_info(telegram_id)
 
-            if not target_admin:
+            if not target:
                 await update.message.reply_text("Admin no encontrado")
                 _del_state(user_id)
                 return
 
-            _set_state(user_id, {"step": "cambiar_rol_rol", "telegram_id": telegram_id, "name": target_admin["name"]})
+            _set_state(user_id, {"step": "cambiar_rol_rol", "telegram_id": telegram_id, "name": target.name})
 
             await update.message.reply_text(
-                f"Admin: {target_admin['name']}\n"
-                f"Rol actual: {target_admin['role']}\n\n"
-                f"Selecciona nuevo rol:\n"
-                f"1. admin\n"
-                f"2. viewer"
+                f"Admin: {target.name}\nRol actual: {target.role}\n\nSelecciona nuevo rol:\n1. admin\n2. viewer"
             )
 
         elif isinstance(estado, dict) and estado.get("step") == "cambiar_rol_rol":
@@ -219,11 +204,12 @@ async def procesar_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
             nuevo_rol = rol_map[texto.strip()]
 
-            await admins_col.update_one(
-                {"telegram_id": estado["telegram_id"]}, {"$set": {"role": nuevo_rol, "updated_at": datetime.utcnow()}}
-            )
+            changed = await svc.change_role(estado["telegram_id"], nuevo_rol)
+            if changed:
+                await update.message.reply_text(f"Rol actualizado:\n{estado['name']}\nNuevo rol: {nuevo_rol}")
+            else:
+                await update.message.reply_text("Admin no encontrado")
 
-            await update.message.reply_text(f"Rol actualizado:\n{estado['name']}\nNuevo rol: {nuevo_rol}")
             _del_state(user_id)
 
     except Exception as e:

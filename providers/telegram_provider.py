@@ -24,13 +24,13 @@ from providers.exceptions import (
     ERROR_CODES,
     ProviderAuthenticationError,
     ProviderConnectionError,
+    ProviderError,
     ProviderNotFoundError,
     ProviderRateLimitError,
     ProviderServerError,
-    ProviderTimeoutError,
     ProviderValidationError,
 )
-from providers.response import ProviderResponse, success_response, error_response
+from providers.response import ProviderResponse, error_response, success_response
 from providers.retry_config import RetryConfig
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,8 @@ class TelegramProvider(BaseProvider[Any]):
 
     def __init__(self, token: str | None = None) -> None:
         super().__init__("telegram")
-        self._token = token or TOKEN
+        resolved = token or TOKEN or ""
+        self._token: str = resolved
         self._bot: Bot | None = None
 
     async def _get_bot(self) -> Bot:
@@ -54,7 +55,7 @@ class TelegramProvider(BaseProvider[Any]):
             self._bot = Bot(token=self._token)
         return self._bot
 
-    def _handle_telegram_error(self, error: TelegramError) -> Exception:
+    def _handle_telegram_error(self, error: TelegramError) -> ProviderError:
         """Convert TelegramError to provider exceptions.
 
         Args:
@@ -118,7 +119,7 @@ class TelegramProvider(BaseProvider[Any]):
             original_error=error,
         )
 
-    @retry(**RetryConfig.default())
+    @retry(**RetryConfig.default())  # type: ignore[untyped-decorator]
     async def send_message(
         self,
         chat_id: int | str,
@@ -166,7 +167,7 @@ class TelegramProvider(BaseProvider[Any]):
                 metadata={"original_error": str(e)},
             )
 
-    @retry(**RetryConfig.no_retry())  # Don't retry deletions
+    @retry(**RetryConfig.no_retry())  # type: ignore[untyped-decorator]
     async def delete_message(
         self,
         chat_id: int | str,
@@ -202,7 +203,7 @@ class TelegramProvider(BaseProvider[Any]):
                 error_code=provider_error.error_code,
             )
 
-    @retry(**RetryConfig.default())
+    @retry(**RetryConfig.default())  # type: ignore[untyped-decorator]
     async def get_chat(self, chat_id: int | str) -> ProviderResponse[dict[str, Any]]:
         """Get chat information.
 

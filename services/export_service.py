@@ -6,7 +6,6 @@ import csv
 import logging
 import os
 from datetime import date, datetime
-from typing import Any
 
 from config import EXCEL_FILE, REPORTS_DIR
 from repositories.member_repository import MemberRepository

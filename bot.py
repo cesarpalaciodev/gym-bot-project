@@ -8,8 +8,15 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from config import SENTRY_DSN, TOKEN
-from core.logging import ensure_logging_configured, get_logger, setup_logging
+from core.logging import get_logger, setup_logging
 from database import init_collections
+from handlers import (
+    botones,
+    getgroupid,
+    help_command,
+    notificacion_5am,
+    start,
+)
 from utils.auth import require_role
 from utils.migrate import apply_pending as run_migrations
 
@@ -24,21 +31,6 @@ if SENTRY_DSN:
         environment=os.getenv("ENVIRONMENT", "production"),
     )
     logger.info("Sentry initialized")
-from handlers import (
-    botones,
-    getgroupid,
-    help_command,
-    notificacion_5am,
-    start,
-)
-
-logging.basicConfig(
-    filename="logs/bot.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-
-logger = logging.getLogger(__name__)
 
 
 async def setup_database() -> None:

@@ -160,25 +160,23 @@ class TestBotonesGroupAdmin:
 
 class TestBotonesAdminMenu:
     @pytest.fixture
-    def patch_admin_db(self, mock_collection):
-        async def side_effect(name: str):
-            return mock_collection
-
-        with patch("handlers.button_handler.get_collection", side_effect=side_effect):
-            yield mock_collection
+    def patch_admin_db(self):
+        mock_svc = AsyncMock()
+        with patch("handlers.button_handler.get_admin_service", return_value=mock_svc):
+            yield mock_svc
 
     async def test_super_admin_can_access_admin_menu(self, mock_update, mock_context, patch_admin_db):
         mock_update.message.text = "⚙️ Administración"
-        mock_db = patch_admin_db
-        mock_db.find_one = AsyncMock(return_value={"telegram_id": 12345, "role": "super_admin"})
+        mock_svc = patch_admin_db
+        mock_svc.is_super_admin = AsyncMock(return_value=True)
         with patch("handlers.button_handler.admins.menu_admins", new_callable=AsyncMock) as mock_fn:
             await bh.botones(mock_update, mock_context)
         mock_fn.assert_awaited_once_with(mock_update, mock_context)
 
     async def test_non_super_admin_blocked_from_admin_menu(self, mock_update, mock_context, patch_admin_db):
         mock_update.message.text = "⚙️ Administración"
-        mock_db = patch_admin_db
-        mock_db.find_one = AsyncMock(return_value={"telegram_id": 12345, "role": "admin"})
+        mock_svc = patch_admin_db
+        mock_svc.is_super_admin = AsyncMock(return_value=False)
         with patch("handlers.button_handler.admins.menu_admins", new_callable=AsyncMock) as mock_fn:
             await bh.botones(mock_update, mock_context)
         mock_fn.assert_not_called()
@@ -186,8 +184,8 @@ class TestBotonesAdminMenu:
 
     async def test_no_admin_record_blocked_from_admin_menu(self, mock_update, mock_context, patch_admin_db):
         mock_update.message.text = "⚙️ Administración"
-        mock_db = patch_admin_db
-        mock_db.find_one = AsyncMock(return_value=None)
+        mock_svc = patch_admin_db
+        mock_svc.is_super_admin = AsyncMock(return_value=False)
         with patch("handlers.button_handler.admins.menu_admins", new_callable=AsyncMock) as mock_fn:
             await bh.botones(mock_update, mock_context)
         mock_fn.assert_not_called()

@@ -47,9 +47,10 @@ class ProviderRateLimitError(ProviderError):
         message: str,
         provider: str | None = None,
         retry_after: int | None = None,
-        **kwargs: dict[str, any],
+        error_code: str | None = None,
+        original_error: Exception | None = None,
     ) -> None:
-        super().__init__(message, provider, **kwargs)
+        super().__init__(message, provider, error_code, original_error)
         self.retry_after = retry_after
 
 

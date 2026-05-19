@@ -43,7 +43,7 @@ class PaymentRepository(BaseRepository[Payment]):
         end_date: str,
     ) -> int:
         """Calculate total income for a date range."""
-        pipeline = [
+        pipeline: list[dict[str, Any]] = [
             {"$match": {"payment_date": {"$gte": start_date, "$lte": end_date}}},
             {"$group": {"_id": None, "total": {"$sum": "$amount"}}},
         ]

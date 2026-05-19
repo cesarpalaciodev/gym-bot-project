@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Generic, TypeVar
 
@@ -65,7 +66,7 @@ class ProviderResponse(Generic[T]):
         """
         return self.data if self.is_success and self.data is not None else default
 
-    def map(self, fn: callable) -> "ProviderResponse[Any]":
+    def map(self, fn: Callable[..., Any]) -> ProviderResponse[Any]:
         """Transform response data if successful.
 
         Args:

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import functools
-import logging
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -45,10 +46,7 @@ class ErrorHandler:
             Structured AppError
         """
         # Convert to AppError
-        if not isinstance(error, AppError):
-            app_error = convert_exception(error)
-        else:
-            app_error = error
+        app_error = convert_exception(error) if not isinstance(error, AppError) else error
 
         # Add context if provided
         if context:
@@ -175,7 +173,7 @@ def safe_execute(
     default_return: T | None = None,
     log_errors: bool = True,
     reraise: bool = False,
-) -> Callable:
+) -> Callable[..., Any]:
     """Decorator to safely execute function with error handling.
 
     Args:
@@ -231,7 +229,7 @@ async def safe_execute_async(
     """
     try:
         if asyncio.iscoroutinefunction(func):
-            return await func(*args, **kwargs)
+            return await func(*args, **kwargs)  # type: ignore[no-any-return]
         else:
             return func(*args, **kwargs)
     except Exception as e:
@@ -240,7 +238,3 @@ async def safe_execute_async(
         context["function"] = func.__name__
         handler.handle_error(e, context)
         return default_return
-
-
-# Import here to avoid circular imports
-import asyncio

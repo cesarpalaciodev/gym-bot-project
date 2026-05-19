@@ -23,7 +23,7 @@ class MemberRepository(BaseRepository[Member]):
 
     async def get_by_name(self, name: str, active_only: bool = True) -> dict[str, Any] | None:
         """Get member by exact name match."""
-        filter_dict = {"name": name}
+        filter_dict: dict[str, Any] = {"name": name}
         if active_only:
             filter_dict["active"] = True
         return await self.find_one(filter_dict)

@@ -21,12 +21,12 @@ from providers.exceptions import (
     ERROR_CODES,
     ProviderAuthenticationError,
     ProviderConnectionError,
-    ProviderNotFoundError,
+    ProviderError,
     ProviderServerError,
     ProviderTimeoutError,
     ProviderValidationError,
 )
-from providers.response import ProviderResponse, success_response, error_response
+from providers.response import ProviderResponse, error_response, success_response
 from providers.retry_config import RetryConfig
 
 logger = logging.getLogger(__name__)
@@ -42,10 +42,10 @@ class DatabaseProvider(BaseProvider[Any]):
     def __init__(self, mongo_uri: str | None = None) -> None:
         super().__init__("mongodb")
         self._mongo_uri = mongo_uri or MONGO_URI
-        self._client: AsyncIOMotorClient | None = None
-        self._db = None
+        self._client: AsyncIOMotorClient[Any] | None = None
+        self._db: Any | None = None
 
-    async def _get_client(self) -> AsyncIOMotorClient:
+    async def _get_client(self) -> AsyncIOMotorClient[Any]:
         """Get or create MongoDB client."""
         if self._client is None:
             if not self._mongo_uri:
@@ -70,11 +70,11 @@ class DatabaseProvider(BaseProvider[Any]):
                     provider=self.name,
                     error_code=ERROR_CODES["CONNECTION_REFUSED"],
                     original_error=e,
-                )
+                ) from e
 
         return self._client
 
-    def _handle_mongo_error(self, error: Exception, operation: str) -> Exception:
+    def _handle_mongo_error(self, error: Exception, operation: str) -> ProviderError:
         """Convert MongoDB errors to provider exceptions.
 
         Args:
@@ -139,7 +139,7 @@ class DatabaseProvider(BaseProvider[Any]):
             original_error=error,
         )
 
-    @retry(**RetryConfig.aggressive())  # Aggressive retry for DB
+    @retry(**RetryConfig.aggressive())  # type: ignore[untyped-decorator]
     async def ping(self) -> ProviderResponse[bool]:
         """Ping database to check connectivity.
 
@@ -167,7 +167,7 @@ class DatabaseProvider(BaseProvider[Any]):
                 error_code=provider_error.error_code,
             )
 
-    @retry(**RetryConfig.aggressive())
+    @retry(**RetryConfig.aggressive())  # type: ignore[untyped-decorator]
     async def find_one(
         self,
         collection: str,
@@ -206,7 +206,7 @@ class DatabaseProvider(BaseProvider[Any]):
                 metadata={"collection": collection},
             )
 
-    @retry(**RetryConfig.aggressive())
+    @retry(**RetryConfig.aggressive())  # type: ignore[untyped-decorator]
     async def find_many(
         self,
         collection: str,
@@ -259,7 +259,7 @@ class DatabaseProvider(BaseProvider[Any]):
                 metadata={"collection": collection},
             )
 
-    @retry(**RetryConfig.aggressive())
+    @retry(**RetryConfig.aggressive())  # type: ignore[untyped-decorator]
     async def insert_one(
         self,
         collection: str,
@@ -298,7 +298,7 @@ class DatabaseProvider(BaseProvider[Any]):
                 metadata={"collection": collection},
             )
 
-    @retry(**RetryConfig.aggressive())
+    @retry(**RetryConfig.aggressive())  # type: ignore[untyped-decorator]
     async def update_one(
         self,
         collection: str,
@@ -342,7 +342,7 @@ class DatabaseProvider(BaseProvider[Any]):
                 metadata={"collection": collection},
             )
 
-    @retry(**RetryConfig.aggressive())
+    @retry(**RetryConfig.aggressive())  # type: ignore[untyped-decorator]
     async def delete_one(
         self,
         collection: str,
@@ -390,7 +390,7 @@ class DatabaseProvider(BaseProvider[Any]):
         Returns:
             ProviderResponse with health status
         """
-        return await self.ping()
+        return await self.ping()  # type: ignore[no-any-return]
 
     async def close(self) -> None:
         """Close database connection."""

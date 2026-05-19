@@ -73,7 +73,7 @@ class AppError(Exception):
         Returns:
             Error dictionary
         """
-        result = {
+        result: dict[str, Any] = {
             "error": {
                 "code": self.code,
                 "message": self.user_message,
@@ -84,12 +84,14 @@ class AppError(Exception):
         if self.context:
             result["context"] = self.context
 
-        if include_traceback and self.traceback:
-            result["traceback"] = self.traceback
+        if include_traceback:
+            tb = self.traceback
+            if tb:
+                result["traceback"] = tb
 
         return result
 
-    def with_context(self, **kwargs: Any) -> "AppError":
+    def with_context(self, **kwargs: Any) -> AppError:
         """Create copy with additional context.
 
         Args:
@@ -111,7 +113,7 @@ class AppError(Exception):
         new_error.traceback = self.traceback.copy()
         return new_error
 
-    def capture_traceback(self) -> "AppError":
+    def capture_traceback(self) -> AppError:
         """Capture current stack trace.
 
         Returns:
@@ -338,7 +340,7 @@ def convert_exception(exc: Exception) -> AppError:
 
     error_class, default_message = mapping.get(type(exc), (SystemError, str(exc)))
 
-    return error_class(
+    return error_class(  # type: ignore[no-any-return]
         message=str(exc) or default_message,
         cause=exc,
     ).capture_traceback()
