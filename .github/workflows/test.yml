@@ -33,7 +33,7 @@ jobs:
         run: ruff check .
 
       - name: Type check with mypy
-        run: mypy bot.py config.py database/ handlers/ keyboards.py models/ utils/
+        run: mypy bot.py config.py core/ dashboard/ database/ handlers/ keyboards.py models/ providers/ repositories/ services/ utils/
 
       - name: Test with pytest
         run: pytest --cov=. --cov-report=term-missing -v

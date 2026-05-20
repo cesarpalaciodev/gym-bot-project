@@ -24,7 +24,7 @@ jobs:
           pip install bandit safety
 
       - name: Bandit security scan
-        run: bandit -r bot.py config.py dashboard/ database/ handlers/ keyboards.py models/ services/ utils/
+        run: bandit -r bot.py config.py core/ dashboard/ database/ handlers/ keyboards.py models/ providers/ repositories/ services/ utils/
 
       - name: Safety dependency scan
         run: safety check -r requirements.txt

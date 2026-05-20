@@ -22,7 +22,14 @@ reports/
 # Coverage
 .coverage
 coverage_html/
+coverage_report.json
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Skills lock
+skills-lock.json
+
+# Windows device file
+nul
