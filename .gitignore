@@ -30,6 +30,7 @@ Thumbs.db
 
 # Skills lock
 skills-lock.json
+.agents/
 
 # Windows device file
 nul
