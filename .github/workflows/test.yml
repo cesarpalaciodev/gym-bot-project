@@ -36,7 +36,7 @@ jobs:
         run: mypy bot.py config.py core/ dashboard/ database/ handlers/ keyboards.py models/ providers/ repositories/ services/ utils/
 
       - name: Test with pytest
-        run: pytest --cov=. --cov-report=term-missing -v
+        run: pytest --cov --cov-report=term-missing -v
         env:
           MONGO_URI: mongodb://localhost:27017/gym_test
           TOKEN: test_token
