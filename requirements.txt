@@ -5,7 +5,7 @@ openpyxl
 pymongo>=4.6.0
 motor>=3.6.0
 fastapi>=0.115.0
-uvicorn[standard]>=0.32.0
+uvicorn[standard]>=0.47.0
 jinja2>=3.1.0
 aiofiles>=24.1.0
 python-multipart>=0.0.20
