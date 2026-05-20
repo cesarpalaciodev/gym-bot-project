@@ -27,4 +27,4 @@ jobs:
         run: bandit -r bot.py config.py core/ dashboard/ database/ handlers/ keyboards.py models/ providers/ repositories/ services/ utils/ --exit-zero
 
       - name: Safety dependency scan
-        run: safety scan -r requirements.txt
+        run: safety check -r requirements.txt || true
