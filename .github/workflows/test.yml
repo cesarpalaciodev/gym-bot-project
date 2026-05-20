@@ -36,18 +36,7 @@ jobs:
         run: mypy bot.py config.py core/ dashboard/ database/ handlers/ keyboards.py models/ providers/ repositories/ services/ utils/
 
       - name: Test with pytest
-        run: |
-          echo "=== PYTHON VERSION ===" && python --version
-          echo "=== VERIFY IMPORTS ===" && python -c "
-          from providers.exceptions import ProviderError; print('exceptions OK')
-          from providers.response import ProviderResponse; print('response OK')
-          from providers.retry_config import RetryConfig; print('retry_config OK')
-          from services.admin_service import AdminService; print('admin_service OK')
-          from services.stats_service import StatsService; print('stats_service OK')
-          from services.notification_service import NotificationService; print('notification OK')
-          "
-          echo "=== RUNNING TESTS ==="
-          pytest --cov=. --cov-report=term-missing -v --ignore=tests/test_integration_mongodb.py
+        run: pytest --cov=. --cov-report=term-missing -v --ignore=tests/test_integration_mongodb.py
         env:
           MONGO_URI: mongodb://localhost:27017/gym_test
           TOKEN: test_token
