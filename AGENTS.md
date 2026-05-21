@@ -30,7 +30,7 @@ make docker-up     # docker-compose up
 ```
 TOKEN=your_telegram_bot_token
 ADMIN_ID=your_telegram_user_id
-MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/gym
+MONGO_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/gym
 GROUP_ID=-1001234567890
 ```
 
