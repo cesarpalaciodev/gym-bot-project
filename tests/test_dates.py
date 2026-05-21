@@ -60,7 +60,7 @@ class TestCalcularDueDate:
 
 class TestCalcularDiasVencido:
     def test_no_vencido(self):
-        due = date(2026, 5, 20)
+        due = date.today()
         assert calcular_dias_vencido(due) == 0
 
     def test_vencido_5_dias(self):
