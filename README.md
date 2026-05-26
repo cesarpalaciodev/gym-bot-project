@@ -8,8 +8,8 @@
 
 Enterprise-grade Telegram Bot + Web Dashboard for professional gym management. Clean architecture with layered separation (handlers → services → repositories → providers).
 
-**Dashboard**: [http://localhost:8080](http://localhost:8080)  
-**API Docs**: [http://localhost:8080/docs](http://localhost:8080/docs)
+**Dashboard**: [http://localhost:3000](http://localhost:3000)  
+**API Docs**: [http://localhost:3000/docs](http://localhost:3000/docs)
 
 ---
 
@@ -243,7 +243,7 @@ MONGO_URI=mongodb://admin:password@localhost:27017/gym
 DASHBOARD_SECRET=random_secret_key
 
 # Optional
-DASHBOARD_PORT=8080
+DASHBOARD_PORT=3000
 ENVIRONMENT=development
 REDIS_URL=redis://localhost:6379/0
 SENTRY_DSN=
