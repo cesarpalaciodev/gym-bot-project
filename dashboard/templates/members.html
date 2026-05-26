@@ -3,32 +3,54 @@
 {% block title %}Members{% endblock %}
 
 {% block content %}
-<div class="mb-16">
+<div class="mb-10">
     <p class="text-brand-600 dark:text-brand-400 text-xs font-heading font-semibold tracking-[0.2em] uppercase mb-4">Roster</p>
     <div class="flex items-baseline gap-3">
-        <h1 class="heading font-heading text-[2.75rem] sm:text-6xl font-bold text-slate-900 tracking-tight">Members</h1>
-        <span class="font-heading text-2xl font-bold text-slate-300 dark:text-slate-600">{{ members|length }}</span>
+        <h1 class="heading font-heading text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight">Members</h1>
+        <span class="font-heading text-xl font-bold text-slate-300 dark:text-slate-600">{{ members|length }}</span>
     </div>
 </div>
 
 <div class="card bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-    {% for m in members %}
-    <div class="flex items-center gap-4 px-5 py-3 table-row border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors duration-300">
-        <p class="text-sm font-medium text-slate-800 dark:text-slate-200 min-w-0 flex-1 line-clamp">{{ m.name }}</p>
-        <p class="text-xs text-slate-400 whitespace-nowrap hidden sm:block">{{ m.phone or 'Sin telefono' }}</p>
-        <p class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap hidden md:block">due {{ m.due_date or '--' }}</p>
-        {% if m.status == 'al_dia' %}
-        <span class="inline-flex items-center gap-1.5 text-[11px] font-heading font-semibold tracking-wider uppercase text-brand-600 dark:text-brand-400 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span> Active</span>
-        {% elif m.status == 'gracia' %}
-        <span class="inline-flex items-center gap-1.5 text-[11px] font-heading font-semibold tracking-wider uppercase text-amber-600 dark:text-amber-400 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Grace</span>
-        {% elif m.status == 'vencido' %}
-        <span class="inline-flex items-center gap-1.5 text-[11px] font-heading font-semibold tracking-wider uppercase text-red-500 dark:text-red-400 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> {{ m.days_overdue }}d</span>
-        {% else %}
-        <span class="inline-flex items-center gap-1.5 text-[11px] font-heading font-semibold tracking-wider uppercase text-slate-300 dark:text-slate-600 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> No pago</span>
-        {% endif %}
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-left border-b border-slate-200 dark:border-white/5">
+                    <th class="px-5 py-3 text-[11px] font-heading font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">Name</th>
+                    <th class="px-5 py-3 text-[11px] font-heading font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 hidden sm:table-cell">Phone</th>
+                    <th class="px-5 py-3 text-[11px] font-heading font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 hidden md:table-cell">Due Date</th>
+                    <th class="px-5 py-3 text-[11px] font-heading font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 text-right">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-white/[0.03]">
+                {% for m in members %}
+                <tr class="hover:bg-slate-50 dark:hover:bg-white/[0.01] transition-colors duration-200">
+                    <td class="px-5 py-3 font-medium text-slate-800 dark:text-slate-200">{{ m.name }}</td>
+                    <td class="px-5 py-3 text-xs text-slate-500 dark:text-slate-400 hidden sm:table-cell whitespace-nowrap">{{ m.phone or '--' }}</td>
+                    <td class="px-5 py-3 text-xs text-slate-500 dark:text-slate-400 hidden md:table-cell whitespace-nowrap">{{ m.due_date or '--' }}</td>
+                    <td class="px-5 py-3 text-right whitespace-nowrap">
+                        {% if m.status == 'al_dia' %}
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-heading font-semibold tracking-wider uppercase text-brand-600 dark:text-brand-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span> Active
+                        </span>
+                        {% elif m.status == 'gracia' %}
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-heading font-semibold tracking-wider uppercase text-amber-600 dark:text-amber-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Grace
+                        </span>
+                        {% elif m.status == 'vencido' %}
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-heading font-semibold tracking-wider uppercase text-red-500 dark:text-red-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> {{ m.days_overdue }}d
+                        </span>
+                        {% else %}
+                        <span class="text-[11px] font-heading font-semibold tracking-wider uppercase text-slate-300 dark:text-slate-600">--</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="px-5 py-12 text-center text-slate-300 dark:text-slate-600 text-sm italic">No active members</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-    {% else %}
-    <p class="p-12 text-center text-slate-300 dark:text-slate-600 text-sm italic">No active members</p>
-    {% endfor %}
 </div>
 {% endblock %}
