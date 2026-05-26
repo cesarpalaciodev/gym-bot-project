@@ -9,6 +9,7 @@ from bson import ObjectId
 from dateutil.relativedelta import relativedelta
 from motor.motor_asyncio import AsyncIOMotorCollection
 
+from config import PLANS
 from models import Member
 from utils import calcular_due_date, format_fecha, parse_fecha
 
@@ -50,11 +51,11 @@ class MemberService:
             "member_id": str(member_id),
             "member_name": name,
             "payment_date": fecha_str,
-            "amount": 0,
-            "plan": "inicial",
+            "amount": PLANS["1"]["price"],
+            "plan": PLANS["1"]["name"],
             "due_date": format_fecha(vencimiento),
             "grace_period": False,
-            "months": 1,
+            "months": PLANS["1"]["months"],
             "created_at": datetime.utcnow(),
         }
         await self.payments.insert_one(payment_data)
