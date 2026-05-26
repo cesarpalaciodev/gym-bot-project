@@ -5,42 +5,42 @@
 {% block content %}
 <div class="mb-16 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
     <div>
-        <p class="text-brand-400 text-xs font-heading font-semibold tracking-[0.2em] uppercase mb-4">Transactions</p>
+        <p class="text-brand-600 dark:text-brand-400 text-xs font-heading font-semibold tracking-[0.2em] uppercase mb-4">Transactions</p>
         <div class="flex items-baseline gap-3">
-            <h1 class="font-heading text-[2.75rem] sm:text-6xl font-bold text-white tracking-tight">Payments</h1>
-            <span class="font-heading text-2xl font-bold text-slate-600">{{ total }}</span>
+            <h1 class="font-heading text-[2.75rem] sm:text-6xl font-bold text-slate-900 dark:text-white tracking-tight">Payments</h1>
+            <span class="font-heading text-2xl font-bold text-slate-300 dark:text-slate-600">{{ total }}</span>
         </div>
     </div>
     {% if pages > 1 %}
     <div class="flex items-center gap-6">
         {% if page > 1 %}
-        <a href="/dashboard/payments?page={{ page - 1 }}" class="text-xs font-heading font-semibold tracking-wider uppercase text-slate-500 hover:text-white transition-colors duration-300">&larr; Prev</a>
+        <a href="/dashboard/payments?page={{ page - 1 }}" class="text-xs font-heading font-semibold tracking-wider uppercase text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-white transition-colors duration-300">&larr; Prev</a>
         {% else %}
-        <span class="text-xs font-heading font-semibold tracking-wider uppercase text-slate-700">&larr; Prev</span>
+        <span class="text-xs font-heading font-semibold tracking-wider uppercase text-slate-200 dark:text-slate-700">&larr; Prev</span>
         {% endif %}
-        <span class="text-[11px] text-slate-600 font-heading">p{{ page }}/{{ pages }}</span>
+        <span class="text-[11px] text-slate-300 dark:text-slate-600 font-heading">p{{ page }}/{{ pages }}</span>
         {% if page < pages %}
-        <a href="/dashboard/payments?page={{ page + 1 }}" class="text-xs font-heading font-semibold tracking-wider uppercase text-slate-500 hover:text-white transition-colors duration-300">Next &rarr;</a>
+        <a href="/dashboard/payments?page={{ page + 1 }}" class="text-xs font-heading font-semibold tracking-wider uppercase text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-white transition-colors duration-300">Next &rarr;</a>
         {% else %}
-        <span class="text-xs font-heading font-semibold tracking-wider uppercase text-slate-700">Next &rarr;</span>
+        <span class="text-xs font-heading font-semibold tracking-wider uppercase text-slate-200 dark:text-slate-700">Next &rarr;</span>
         {% endif %}
     </div>
     {% endif %}
 </div>
 
-<div class="bg-surface.100 border border-white/[0.06] rounded-2xl overflow-hidden">
+<div class="bg-white dark:bg-surface.100 border border-slate-200 dark:border-white/[0.06] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
     {% for p in payments %}
-    <div class="flex items-center justify-between px-6 py-5 border-b border-white/[0.04] last:border-0 hover:bg-surface.200/50 transition-colors duration-300">
+    <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-white/[0.04] last:border-0 hover:bg-slate-50 dark:hover:bg-surface.200/50 transition-colors duration-300">
         <div class="min-w-0 flex-1">
-            <p class="text-sm font-medium text-slate-200">{{ p.member_name }}</p>
-            <p class="text-xs text-slate-500 mt-0.5">{{ p.payment_date }} <span class="mx-2">&middot;</span> {{ p.plan }} <span class="mx-2">&middot;</span> due {{ p.due_date }}</p>
+            <p class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ p.member_name }}</p>
+            <p class="text-xs text-slate-400 mt-0.5">{{ p.payment_date }} <span class="mx-2">&middot;</span> {{ p.plan }} <span class="mx-2">&middot;</span> due {{ p.due_date }}</p>
         </div>
         <div class="ml-8">
-            <p class="font-heading font-bold text-white">${{ "{:,}".format(p.amount) }}</p>
+            <p class="font-heading font-bold text-brand-600 dark:text-white">${{ "{:,}".format(p.amount) }}</p>
         </div>
     </div>
     {% else %}
-    <p class="p-12 text-center text-slate-600 text-sm italic">No payments recorded</p>
+    <p class="p-12 text-center text-slate-300 dark:text-slate-600 text-sm italic">No payments recorded</p>
     {% endfor %}
 </div>
 {% endblock %}
