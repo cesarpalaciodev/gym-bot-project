@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -10,38 +11,46 @@ from config import MONGO_URI
 
 logger = logging.getLogger(__name__)
 
-_client: AsyncIOMotorClient[Any] | None = None
-_db: AsyncIOMotorDatabase[Any] | None = None
+_loop_clients: dict[int, tuple[AsyncIOMotorClient[Any], AsyncIOMotorDatabase[Any]]] = {}
+
+
+def _get_loop_key() -> int:
+    try:
+        return id(asyncio.get_running_loop())
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+        return id(loop)
 
 
 async def get_database() -> AsyncIOMotorDatabase[Any]:
-    global _client, _db
-    if _db is None:
-        if not MONGO_URI:
-            raise ValueError("MONGO_URI no está configurado")
-        try:
-            _client = AsyncIOMotorClient(
-                MONGO_URI,
-                maxPoolSize=10,
-                minPoolSize=1,
-                serverSelectionTimeoutMS=5000,
-                connectTimeoutMS=5000,
-            )
-            _db = _client.get_database()
-            await _db.command("ping")
-            logger.info("Conectado a MongoDB (Motor async)")
-        except (ConnectionFailure, OperationFailure) as e:
-            logger.error(f"Error conectando a MongoDB: {e}")
-            raise
-    return _db
+    key = _get_loop_key()
+    if key in _loop_clients:
+        return _loop_clients[key][1]
+
+    if not MONGO_URI:
+        raise ValueError("MONGO_URI no esta configurado")
+    try:
+        client = AsyncIOMotorClient(
+            MONGO_URI,
+            maxPoolSize=10,
+            minPoolSize=1,
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
+        )
+        db = client.get_database()
+        await db.command("ping")
+        _loop_clients[key] = (client, db)
+        logger.info("Conectado a MongoDB (Motor async)")
+    except (ConnectionFailure, OperationFailure) as e:
+        logger.error(f"Error conectando a MongoDB: {e}")
+        raise
+    return db
 
 
 async def close_database() -> None:
-    global _client, _db
-    if _client:
-        _client.close()
-    _client = None
-    _db = None
+    for client, _ in _loop_clients.values():
+        client.close()
+    _loop_clients.clear()
 
 
 async def init_collections() -> None:
