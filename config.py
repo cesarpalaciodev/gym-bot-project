@@ -29,9 +29,6 @@ LATE_DAYS = 5
 
 PLANS = {
     "1": {"name": "Mensual", "months": 1, "price": 70000},
-    "2": {"name": "Trimestral", "months": 3, "price": 190000},
-    "3": {"name": "Semestral", "months": 6, "price": 360000},
-    "4": {"name": "Anual", "months": 12, "price": 650000},
 }
 
 ADMIN_ROLES = {
