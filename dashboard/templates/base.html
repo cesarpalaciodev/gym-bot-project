@@ -6,7 +6,7 @@
     <title>{% block title %}Dashboard{% endblock %} | IronVault</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -14,84 +14,107 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        serif: ['"Bodoni Moda"', 'Georgia', 'serif'],
-                        sans: ['"Jost"', 'system-ui', 'sans-serif'],
+                        heading: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+                        body: ['"DM Sans"', 'system-ui', 'sans-serif'],
                     },
                     colors: {
-                        gold: { 400: '#CA8A04', 500: '#B07D02', 600: '#966D01' },
+                        brand: {
+                            50: '#ECFDF5', 100: '#D1FAE5', 200: '#A7F3D0', 300: '#6EE7B7',
+                            400: '#34D399', 500: '#10B981', 600: '#059669', 700: '#047857',
+                        },
+                        surface: {
+                            DEFAULT: '#06080D', 100: '#0A0D14', 200: '#0F121A',
+                            300: '#141822', 400: '#1A1F2E',
+                        },
                     },
                 },
             },
         }
     </script>
+    <style>
+        .bg-grid { background-image: radial-gradient(circle, rgba(16,185,129,0.06) 1px, transparent 1px); background-size: 32px 32px; }
+        .bg-glow { background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(16,185,129,0.08), transparent 70%); }
+        .bg-glow2 { background: radial-gradient(ellipse 60% 50% at 80% 80%, rgba(16,185,129,0.05), transparent 70%); }
+        .line-clamp { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+        @keyframes float { 0%,100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
+        @keyframes pulse-glow { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-glow { animation: pulse-glow 4s ease-in-out infinite; }
+        .animate-in { animation: slideUp 0.6s cubic-bezier(0.16,1,0.3,1) forwards; opacity: 0; }
+        .delay-1 { animation-delay: 0.05s; } .delay-2 { animation-delay: 0.1s; }
+        .delay-3 { animation-delay: 0.15s; } .delay-4 { animation-delay: 0.2s; }
+        .delay-5 { animation-delay: 0.25s; } .delay-6 { animation-delay: 0.3s; }
+    </style>
     {% block head %}{% endblock %}
 </head>
-<body class="font-sans bg-stone-50 dark:bg-[#0D0B0A] text-stone-900 dark:text-stone-200 min-h-screen antialiased transition-colors duration-500">
+<body class="font-body bg-surface.DEFAULT text-slate-300 min-h-screen antialiased transition-colors duration-500 relative overflow-x-hidden">
+    <div class="fixed inset-0 bg-grid pointer-events-none z-0"></div>
+    <div class="fixed inset-0 bg-glow pointer-events-none z-0"></div>
+    <div class="fixed inset-0 bg-glow2 pointer-events-none z-0"></div>
 
     <!-- Navbar -->
-    <nav class="fixed top-0 left-0 right-0 z-50 border-b border-stone-200/60 dark:border-white/5 bg-stone-50/90 dark:bg-[#0D0B0A]/90 backdrop-blur-xl">
-        <div class="max-w-6xl mx-auto px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <a href="/" class="flex items-center gap-3 group">
-                    <div class="w-9 h-9 bg-gold-400 rounded-lg flex items-center justify-center shadow-lg shadow-gold-400/20">
-                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6.5 7h11"/><path d="M6.5 17h11"/><path d="M6 20V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14"/><path d="M10 4v16"/><path d="M14 4v16"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <span class="font-serif text-xl font-semibold italic tracking-tight text-stone-900 dark:text-white">IronVault</span>
-                        <span class="block text-[10px] uppercase tracking-[0.2em] text-stone-400 dark:text-stone-500 -mt-0.5">Gym</span>
-                    </div>
-                </a>
+    <nav class="fixed top-0 left-0 right-0 z-50">
+        <div class="mx-3 mt-3 max-w-6xl xl:mx-auto">
+            <div class="bg-surface.200/70 backdrop-blur-2xl border border-white/5 rounded-2xl px-6">
+                <div class="flex items-center justify-between h-14">
+                    <a href="/" class="flex items-center gap-2.5 group">
+                        <div class="relative w-8 h-8">
+                            <div class="absolute inset-0 bg-brand-500 rounded-lg rotate-6 group-hover:rotate-12 transition-transform duration-500"></div>
+                            <div class="absolute inset-0 bg-surface.200 border border-white/10 rounded-lg flex items-center justify-center">
+                                <svg class="w-4 h-4 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M6.5 7h11"/><path d="M6.5 17h11"/><path d="M6 20V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14"/><path d="M10 4v16"/><path d="M14 4v16"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="leading-tight">
+                            <span class="font-heading text-base font-bold tracking-tight text-white">Iron</span><span class="font-heading text-base font-bold tracking-tight text-brand-400">Vault</span>
+                        </div>
+                    </a>
 
-                <div class="hidden md:flex items-center gap-8">
-                    <a href="/" class="nav-link text-sm font-medium tracking-wide uppercase">Dashboard</a>
-                    <a href="/dashboard/stats" class="nav-link text-sm font-medium tracking-wide uppercase">Stats</a>
-                    <a href="/dashboard/members" class="nav-link text-sm font-medium tracking-wide uppercase">Members</a>
-                    <a href="/dashboard/payments" class="nav-link text-sm font-medium tracking-wide uppercase">Payments</a>
-                    <a href="/dashboard/health" class="nav-link text-sm font-medium tracking-wide uppercase">Health</a>
+                    <div class="hidden lg:flex items-center gap-1">
+                        <a href="/" class="px-3.5 py-2 rounded-lg text-[13px] font-heading font-medium tracking-wide text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300">Dashboard</a>
+                        <a href="/dashboard/stats" class="px-3.5 py-2 rounded-lg text-[13px] font-heading font-medium tracking-wide text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300">Stats</a>
+                        <a href="/dashboard/members" class="px-3.5 py-2 rounded-lg text-[13px] font-heading font-medium tracking-wide text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300">Members</a>
+                        <a href="/dashboard/payments" class="px-3.5 py-2 rounded-lg text-[13px] font-heading font-medium tracking-wide text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300">Payments</a>
+                        <a href="/dashboard/health" class="px-3.5 py-2 rounded-lg text-[13px] font-heading font-medium tracking-wide text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300">Health</a>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button id="theme-toggle" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all duration-300 cursor-pointer" aria-label="Toggle theme">
+                            <svg id="theme-sun" class="w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg>
+                            <svg id="theme-moon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        </button>
+                        <button id="mobile-menu-btn" class="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white cursor-pointer" aria-label="Menu">
+                            <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+                        </button>
+                        {% if admin %}
+                        <a href="/logout" class="hidden sm:flex text-[11px] font-heading font-semibold tracking-widest uppercase text-slate-500 hover:text-red-400 transition-colors duration-300 ml-2 cursor-pointer">Exit</a>
+                        {% endif %}
+                    </div>
                 </div>
-
-                <div class="flex items-center gap-4">
-                    <button id="theme-toggle" class="w-9 h-9 flex items-center justify-center rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/5 transition-all duration-300 cursor-pointer" aria-label="Toggle theme">
-                        <svg id="theme-sun" class="w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg>
-                        <svg id="theme-moon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                    </button>
-                    <button id="mobile-menu-btn" class="md:hidden w-9 h-9 flex items-center justify-center rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 cursor-pointer" aria-label="Menu">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
-                    </button>
+                <div id="mobile-menu" class="hidden lg:hidden border-t border-white/5 py-4 space-y-1">
+                    <a href="/" class="block px-3 py-2.5 text-sm text-slate-400 hover:text-white font-heading">Dashboard</a>
+                    <a href="/dashboard/stats" class="block px-3 py-2.5 text-sm text-slate-400 hover:text-white font-heading">Stats</a>
+                    <a href="/dashboard/members" class="block px-3 py-2.5 text-sm text-slate-400 hover:text-white font-heading">Members</a>
+                    <a href="/dashboard/payments" class="block px-3 py-2.5 text-sm text-slate-400 hover:text-white font-heading">Payments</a>
+                    <a href="/dashboard/health" class="block px-3 py-2.5 text-sm text-slate-400 hover:text-white font-heading">Health</a>
                     {% if admin %}
-                    <a href="/logout" class="text-xs font-medium tracking-wide uppercase text-stone-400 hover:text-red-500 transition-colors duration-300 cursor-pointer">Exit</a>
+                    <a href="/logout" class="block px-3 py-2.5 text-sm text-red-400 hover:text-red-300 font-heading">Exit</a>
                     {% endif %}
                 </div>
-            </div>
-            <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200/60 dark:border-white/5 py-4 space-y-1">
-                <a href="/" class="block px-3 py-2 text-sm font-medium tracking-wide uppercase text-stone-600 dark:text-stone-400 hover:text-gold-400">Dashboard</a>
-                <a href="/dashboard/stats" class="block px-3 py-2 text-sm font-medium tracking-wide uppercase text-stone-600 dark:text-stone-400 hover:text-gold-400">Stats</a>
-                <a href="/dashboard/members" class="block px-3 py-2 text-sm font-medium tracking-wide uppercase text-stone-600 dark:text-stone-400 hover:text-gold-400">Members</a>
-                <a href="/dashboard/payments" class="block px-3 py-2 text-sm font-medium tracking-wide uppercase text-stone-600 dark:text-stone-400 hover:text-gold-400">Payments</a>
-                <a href="/dashboard/health" class="block px-3 py-2 text-sm font-medium tracking-wide uppercase text-stone-600 dark:text-stone-400 hover:text-gold-400">Health</a>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-6xl mx-auto px-6 lg:px-8 pt-24 pb-20">
+    <main class="relative z-10 max-w-6xl mx-auto px-6 lg:px-8 pt-28 pb-24">
         {% block content %}{% endblock %}
     </main>
 
-    <style>
-        .nav-link { color: #78716C; transition: color 0.3s; }
-        .nav-link:hover { color: #CA8A04; }
-        .dark .nav-link { color: #78716C; }
-        .dark .nav-link:hover { color: #CA8A04; }
-    </style>
-
     <script>
         (function() {
-            const html = document.documentElement;
-            const toggle = document.getElementById('theme-toggle');
-            const sun = document.getElementById('theme-sun');
-            const moon = document.getElementById('theme-moon');
+            const html = document.documentElement, toggle = document.getElementById('theme-toggle');
+            const sun = document.getElementById('theme-sun'), moon = document.getElementById('theme-moon');
             function set(d) {
                 if (d) { html.classList.add('dark'); sun.classList.remove('hidden'); moon.classList.add('hidden'); localStorage.setItem('theme','dark'); }
                 else { html.classList.remove('dark'); sun.classList.add('hidden'); moon.classList.remove('hidden'); localStorage.setItem('theme','light'); }
@@ -99,12 +122,15 @@
             const s = localStorage.getItem('theme');
             set(s ? s === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
             toggle.addEventListener('click', () => set(!html.classList.contains('dark')));
-            const p = window.location.pathname;
+            const path = window.location.pathname;
             document.querySelectorAll('nav a[href]').forEach(l => {
                 const h = l.getAttribute('href');
-                if (h === p || (h !== '/' && p.startsWith(h))) l.style.color = '#CA8A04';
+                if (h !== '/' && path.startsWith(h)) { l.classList.add('text-white'); l.classList.remove('text-slate-400'); }
+                if (h === '/' && path === '/') { l.classList.add('text-white'); l.classList.remove('text-slate-400'); }
             });
-            document.getElementById('mobile-menu-btn').addEventListener('click', () => document.getElementById('mobile-menu').classList.toggle('hidden'));
+            document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+                document.getElementById('mobile-menu').classList.toggle('hidden');
+            });
         })();
     </script>
 </body>

@@ -6,55 +6,59 @@
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const resp = await fetch('/api/stats');
-        const data = await resp.json();
-        document.getElementById('active-members').textContent = data.active_members;
-        document.getElementById('in-grace').textContent = data.in_grace;
-        document.getElementById('overdue').textContent = data.overdue;
-        document.getElementById('monthly-income').textContent = '$' + Number(data.monthly_income).toLocaleString();
-        document.getElementById('prev-income').textContent = '$' + Number(data.previous_month_income).toLocaleString();
-        const pct = data.income_change_pct;
+        const r = await fetch('/api/stats');
+        const d = await r.json();
+        document.getElementById('active-members').textContent = d.active_members;
+        document.getElementById('in-grace').textContent = d.in_grace;
+        document.getElementById('overdue').textContent = d.overdue;
+        document.getElementById('monthly-income').textContent = '$' + Number(d.monthly_income).toLocaleString();
+        document.getElementById('prev-income').textContent = '$' + Number(d.previous_month_income).toLocaleString();
+        const pct = d.income_change_pct;
         const el = document.getElementById('income-change');
         el.textContent = (pct >= 0 ? '+' : '') + pct + '%';
-        el.className = pct >= 0 ? 'text-stone-700 dark:text-stone-300' : 'text-red-400';
-    } catch (e) { document.getElementById('error-msg').classList.remove('hidden'); }
+        el.className = pct >= 0 ? 'text-brand-400' : 'text-red-400';
+    } catch(e) { document.getElementById('error-msg').classList.remove('hidden'); }
 });
 </script>
 {% endblock %}
 
 {% block content %}
 <div class="mb-16">
-    <h1 class="font-serif text-5xl md:text-6xl font-semibold italic text-stone-900 dark:text-white leading-none">
-        Performance <span class="text-gold-400">metrics</span>
+    <p class="text-brand-400 text-xs font-heading font-semibold tracking-[0.2em] uppercase mb-4">Performance</p>
+    <h1 class="font-heading text-[2.75rem] sm:text-6xl font-bold text-white leading-[1.05] tracking-tight">
+        Metrics <span class="text-brand-400">at a glance</span>
     </h1>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 mb-16">
-    <div class="bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-10">
-        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 mb-6">Active</p>
-        <p class="font-serif text-7xl font-light italic text-stone-900 dark:text-white" id="active-members">--</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-12">
+    <div class="bg-surface.100 border border-white/[0.06] rounded-2xl p-8 hover:border-brand-500/20 transition-all duration-500">
+        <p class="text-[10px] font-heading font-bold tracking-[0.2em] uppercase text-slate-500 mb-6">Active</p>
+        <p class="font-heading text-6xl font-bold text-white tracking-tight" id="active-members">--</p>
     </div>
-    <div class="bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-10">
-        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 mb-6">In Grace</p>
-        <p class="font-serif text-7xl font-light italic text-gold-400" id="in-grace">--</p>
+    <div class="bg-surface.100 border border-white/[0.06] rounded-2xl p-8 hover:border-amber-500/20 transition-all duration-500">
+        <p class="text-[10px] font-heading font-bold tracking-[0.2em] uppercase text-slate-500 mb-6">In Grace</p>
+        <p class="font-heading text-6xl font-bold text-amber-400 tracking-tight" id="in-grace">--</p>
     </div>
-    <div class="bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-10">
-        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 mb-6">Overdue</p>
-        <p class="font-serif text-7xl font-light italic text-red-400" id="overdue">--</p>
-    </div>
-</div>
-
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-1">
-    <div class="bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-10">
-        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 mb-6">Monthly Income</p>
-        <p class="font-serif text-6xl font-light italic text-stone-900 dark:text-white" id="monthly-income">--</p>
-    </div>
-    <div class="bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-10">
-        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 mb-6">Previous Month</p>
-        <p class="font-serif text-5xl font-light italic text-stone-300 dark:text-stone-600" id="prev-income">--</p>
-        <p class="mt-4 text-sm font-light"><span class="text-stone-400">vs:</span> <span id="income-change" class="font-medium">--</span></p>
+    <div class="bg-surface.100 border border-white/[0.06] rounded-2xl p-8 hover:border-red-500/20 transition-all duration-500">
+        <p class="text-[10px] font-heading font-bold tracking-[0.2em] uppercase text-slate-500 mb-6">Overdue</p>
+        <p class="font-heading text-6xl font-bold text-red-400 tracking-tight" id="overdue">--</p>
     </div>
 </div>
 
-<div id="error-msg" class="hidden mt-12 p-6 border border-red-200 dark:border-red-500/20 text-red-500 text-sm font-light text-center">Error loading data</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div class="bg-surface.100 border border-white/[0.06] rounded-2xl p-8">
+        <p class="text-[10px] font-heading font-bold tracking-[0.2em] uppercase text-slate-500 mb-6">Monthly Income</p>
+        <p class="font-heading text-5xl font-bold text-white tracking-tight" id="monthly-income">--</p>
+    </div>
+    <div class="bg-surface.100 border border-white/[0.06] rounded-2xl p-8">
+        <p class="text-[10px] font-heading font-bold tracking-[0.2em] uppercase text-slate-500 mb-6">Previous Month</p>
+        <p class="font-heading text-4xl font-bold text-slate-600 tracking-tight" id="prev-income">--</p>
+        <p class="mt-4 text-sm">
+            <span class="text-slate-500">vs:</span>
+            <span id="income-change" class="font-heading font-bold ml-1">--</span>
+        </p>
+    </div>
+</div>
+
+<div id="error-msg" class="hidden mt-12 p-6 border border-red-500/20 rounded-2xl bg-red-500/5 text-red-400 text-sm text-center">Failed to load stats</div>
 {% endblock %}
