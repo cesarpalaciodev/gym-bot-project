@@ -6,14 +6,14 @@
 <div class="mb-16">
     <p class="text-brand-600 dark:text-brand-400 text-xs font-heading font-semibold tracking-[0.2em] uppercase mb-4">Roster</p>
     <div class="flex items-baseline gap-3">
-        <h1 class="font-heading text-[2.75rem] sm:text-6xl font-bold text-slate-900 dark:text-white tracking-tight">Members</h1>
+        <h1 class="heading font-heading text-[2.75rem] sm:text-6xl font-bold text-slate-900 tracking-tight">Members</h1>
         <span class="font-heading text-2xl font-bold text-slate-300 dark:text-slate-600">{{ members|length }}</span>
     </div>
 </div>
 
-<div class="bg-white dark:bg-surface.100 border border-slate-200 dark:border-white/[0.06] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
+<div class="card bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
     {% for m in members %}
-    <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-white/[0.04] last:border-0 hover:bg-slate-50 dark:hover:bg-surface.200/50 transition-colors duration-300">
+    <div class="flex items-center justify-between px-6 py-5 table-row border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors duration-300">
         <div class="min-w-0 flex-1">
             <p class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ m.name }}</p>
             <p class="text-xs text-slate-400 mt-0.5">{{ m.phone or '--' }} <span class="mx-2">&middot;</span> due {{ m.due_date or '--' }}</p>

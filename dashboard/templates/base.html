@@ -33,8 +33,6 @@
     </script>
     <style>
         .bg-grid { background-image: radial-gradient(circle, rgba(16,185,129,0.06) 1px, transparent 1px); background-size: 32px 32px; }
-        .dark .bg-grid { opacity: 1; } .bg-grid { opacity: 0; transition: opacity 0.5s; }
-        .dark .bg-glow, .dark .bg-glow2 { opacity: 1; } .bg-glow, .bg-glow2 { opacity: 0; transition: opacity 0.5s; }
         .bg-glow { background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(16,185,129,0.08), transparent 70%); }
         .bg-glow2 { background: radial-gradient(ellipse 60% 50% at 80% 80%, rgba(16,185,129,0.05), transparent 70%); }
         .line-clamp { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
@@ -47,18 +45,30 @@
         .delay-1 { animation-delay: 0.05s; } .delay-2 { animation-delay: 0.1s; }
         .delay-3 { animation-delay: 0.15s; } .delay-4 { animation-delay: 0.2s; }
         .delay-5 { animation-delay: 0.25s; } .delay-6 { animation-delay: 0.3s; }
+
+        /* Dark mode overrides (CDN-friendly: use CSS not Tailwind dark: prefix for custom colors) */
+        .dark body { background-color: #06080D; color: #CBD5E1; }
+        .dark .card { background-color: #0A0D14; border-color: rgba(255,255,255,0.06); }
+        .dark .card-hover:hover { background-color: #0F121A; border-color: rgba(16,185,129,0.2); }
+        .dark .nav-bg { background-color: rgba(15,18,26,0.7); border-color: rgba(255,255,255,0.05); }
+        .dark .heading { color: #FFFFFF; }
+        .dark .subtext { color: #94A3B8; }
+        .dark .link { color: #64748B; }
+        .dark .link:hover { color: #FFFFFF; }
+        .dark .table-row { border-color: rgba(255,255,255,0.04); }
+        .dark .table-row:hover { background-color: rgba(255,255,255,0.02); }
     </style>
     {% block head %}{% endblock %}
 </head>
-<body class="font-body bg-white dark:bg-surface.DEFAULT text-slate-700 dark:text-slate-300 min-h-screen antialiased transition-colors duration-500 relative overflow-x-hidden">
-    <div class="fixed inset-0 bg-grid pointer-events-none z-0"></div>
-    <div class="fixed inset-0 bg-glow pointer-events-none z-0"></div>
-    <div class="fixed inset-0 bg-glow2 pointer-events-none z-0"></div>
+<body class="font-body bg-white text-slate-700 min-h-screen antialiased transition-colors duration-500 relative overflow-x-hidden">
+    <div class="fixed inset-0 bg-grid pointer-events-none z-0 hidden dark:block"></div>
+    <div class="fixed inset-0 bg-glow pointer-events-none z-0 hidden dark:block"></div>
+    <div class="fixed inset-0 bg-glow2 pointer-events-none z-0 hidden dark:block"></div>
 
     <!-- Navbar -->
     <nav class="fixed top-0 left-0 right-0 z-50">
         <div class="mx-3 mt-3 max-w-6xl xl:mx-auto">
-            <div class="bg-white/80 dark:bg-surface.200/70 backdrop-blur-2xl border border-slate-200 dark:border-white/5 rounded-2xl px-6 shadow-sm dark:shadow-none">
+            <div class="nav-bg bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-2xl px-6 shadow-sm">
                 <div class="flex items-center justify-between h-14">
                     <a href="/" class="flex items-center gap-2.5 group">
                         <div class="relative w-8 h-8">

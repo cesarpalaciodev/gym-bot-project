@@ -25,32 +25,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 {% block content %}
 <div class="mb-16">
     <p class="text-brand-600 dark:text-brand-400 text-xs font-heading font-semibold tracking-[0.2em] uppercase mb-4">Performance</p>
-    <h1 class="font-heading text-[2.75rem] sm:text-6xl font-bold text-slate-900 dark:text-white leading-[1.05] tracking-tight">
+    <h1 class="heading font-heading text-[2.75rem] sm:text-6xl font-bold text-slate-900 leading-[1.05] tracking-tight">
         Metrics <span class="text-brand-600 dark:text-brand-400">at a glance</span>
     </h1>
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-12">
-    <div class="bg-white dark:bg-surface.100 border border-slate-200 dark:border-white/[0.06] rounded-2xl p-8 hover:border-brand-500/20 transition-all duration-500">
+    <div class="card bg-white border border-slate-200 rounded-2xl p-8 hover:border-brand-500/20 dark:hover:border-brand-500/20 transition-all duration-500">
         <p class="text-[10px] font-heading font-bold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500 mb-6">Active</p>
         <p class="font-heading text-6xl font-bold text-slate-900 dark:text-white tracking-tight" id="active-members">--</p>
     </div>
-    <div class="bg-white dark:bg-surface.100 border border-slate-200 dark:border-white/[0.06] rounded-2xl p-8 hover:border-amber-500/20 transition-all duration-500">
+    <div class="card bg-white border border-slate-200 rounded-2xl p-8 hover:border-amber-500/20 dark:hover:border-amber-500/20 transition-all duration-500">
         <p class="text-[10px] font-heading font-bold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500 mb-6">In Grace</p>
         <p class="font-heading text-6xl font-bold text-amber-600 dark:text-amber-400 tracking-tight" id="in-grace">--</p>
     </div>
-    <div class="bg-white dark:bg-surface.100 border border-slate-200 dark:border-white/[0.06] rounded-2xl p-8 hover:border-red-500/20 transition-all duration-500">
+    <div class="card bg-white border border-slate-200 rounded-2xl p-8 hover:border-red-500/20 dark:hover:border-red-500/20 transition-all duration-500">
         <p class="text-[10px] font-heading font-bold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500 mb-6">Overdue</p>
         <p class="font-heading text-6xl font-bold text-red-500 dark:text-red-400 tracking-tight" id="overdue">--</p>
     </div>
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-    <div class="bg-white dark:bg-surface.100 border border-slate-200 dark:border-white/[0.06] rounded-2xl p-8">
+    <div class="card bg-white border border-slate-200 rounded-2xl p-8">
         <p class="text-[10px] font-heading font-bold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500 mb-6">Monthly Income</p>
         <p class="font-heading text-5xl font-bold text-slate-900 dark:text-white tracking-tight" id="monthly-income">--</p>
     </div>
-    <div class="bg-white dark:bg-surface.100 border border-slate-200 dark:border-white/[0.06] rounded-2xl p-8">
+    <div class="card bg-white border border-slate-200 rounded-2xl p-8">
         <p class="text-[10px] font-heading font-bold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500 mb-6">Previous Month</p>
         <p class="font-heading text-4xl font-bold text-slate-300 dark:text-slate-600 tracking-tight" id="prev-income">--</p>
         <p class="mt-4 text-sm">
