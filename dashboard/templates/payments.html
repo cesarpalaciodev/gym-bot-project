@@ -3,52 +3,77 @@
 {% block title %}Payments{% endblock %}
 
 {% block content %}
-<div class="bg-gray-900/60 rounded-2xl border border-gray-800 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">Payment History</h2>
-        <span class="text-sm text-gray-400">{{ total }} total</span>
+<div class="mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+            <h1 class="font-heading text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Payment <span class="text-brand-500">History</span>
+            </h1>
+            <p class="mt-1 text-slate-500 dark:text-slate-400 text-sm">{{ total }} total payments</p>
+        </div>
+        {% if pages > 1 %}
+        <div class="flex items-center gap-2">
+            {% if page > 1 %}
+            <a href="/dashboard/payments?page={{ page - 1 }}" class="px-4 py-2 text-sm font-semibold rounded-xl bg-white dark:bg-dark-300 border border-slate-200/70 dark:border-white/5 text-slate-700 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 hover:border-brand-200 dark:hover:border-brand-500/20 transition-all duration-200">
+                &larr; Previous
+            </a>
+            {% else %}
+            <span class="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/5 text-slate-300 dark:text-slate-600 cursor-not-allowed">&larr; Previous</span>
+            {% endif %}
+            <span class="text-sm text-slate-400 dark:text-slate-500 px-1">Page {{ page }} of {{ pages }}</span>
+            {% if page < pages %}
+            <a href="/dashboard/payments?page={{ page + 1 }}" class="px-4 py-2 text-sm font-semibold rounded-xl bg-white dark:bg-dark-300 border border-slate-200/70 dark:border-white/5 text-slate-700 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 hover:border-brand-200 dark:hover:border-brand-500/20 transition-all duration-200">
+                Next &rarr;
+            </a>
+            {% else %}
+            <span class="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/5 text-slate-300 dark:text-slate-600 cursor-not-allowed">Next &rarr;</span>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
+</div>
+
+<div class="bg-white dark:bg-dark-300 rounded-2xl border border-slate-200/70 dark:border-white/5 shadow-sm overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead>
-                <tr class="text-left text-gray-400 text-xs uppercase tracking-wider border-b border-gray-800">
-                    <th class="px-6 py-3 font-medium">Member</th>
-                    <th class="px-6 py-3 font-medium">Amount</th>
-                    <th class="px-6 py-3 font-medium">Date</th>
-                    <th class="px-6 py-3 font-medium">Plan</th>
-                    <th class="px-6 py-3 font-medium">Due Date</th>
+                <tr class="text-left text-xs uppercase tracking-wider border-b border-slate-200/70 dark:border-white/5">
+                    <th class="px-5 sm:px-6 py-3.5 font-semibold text-slate-400 dark:text-slate-500">Member</th>
+                    <th class="px-5 sm:px-6 py-3.5 font-semibold text-slate-400 dark:text-slate-500">Amount</th>
+                    <th class="px-5 sm:px-6 py-3.5 font-semibold text-slate-400 dark:text-slate-500">Date</th>
+                    <th class="px-5 sm:px-6 py-3.5 font-semibold text-slate-400 dark:text-slate-500">Plan</th>
+                    <th class="px-5 sm:px-6 py-3.5 font-semibold text-slate-400 dark:text-slate-500 hidden sm:table-cell">Due Date</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-slate-100 dark:divide-white/5">
                 {% for p in payments %}
-                <tr class="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors">
-                    <td class="px-6 py-3 font-medium text-gray-200">{{ p.member_name }}</td>
-                    <td class="px-6 py-3 text-emerald-400 font-mono">${{ "{:,}".format(p.amount) }}</td>
-                    <td class="px-6 py-3 text-gray-400">{{ p.payment_date }}</td>
-                    <td class="px-6 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-gray-300">{{ p.plan }}</span>
+                <tr class="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors duration-150">
+                    <td class="px-5 sm:px-6 py-3.5 font-semibold text-slate-800 dark:text-slate-200">{{ p.member_name }}</td>
+                    <td class="px-5 sm:px-6 py-3.5 font-mono text-emerald-600 dark:text-emerald-400 font-medium">${{ "{:,}".format(p.amount) }}</td>
+                    <td class="px-5 sm:px-6 py-3.5 text-slate-500 dark:text-slate-400">{{ p.payment_date }}</td>
+                    <td class="px-5 sm:px-6 py-3.5">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400">{{ p.plan }}</span>
                     </td>
-                    <td class="px-6 py-3 text-gray-400">{{ p.due_date }}</td>
+                    <td class="px-5 sm:px-6 py-3.5 text-slate-500 dark:text-slate-400 hidden sm:table-cell">{{ p.due_date }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">No payments recorded.</td>
+                    <td colspan="5" class="px-6 py-12 text-center text-slate-400 dark:text-slate-500">
+                        <svg class="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/>
+                        </svg>
+                        No payments recorded.
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
     {% if pages > 1 %}
-    <div class="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
-        <span class="text-sm text-gray-400">Page {{ page }} of {{ pages }}</span>
-        <div class="flex gap-2">
-            {% if page > 1 %}
-            <a href="/dashboard/payments?page={{ page - 1 }}" class="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">Previous</a>
-            {% endif %}
-            {% if page < pages %}
-            <a href="/dashboard/payments?page={{ page + 1 }}" class="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">Next</a>
-            {% endif %}
-        </div>
+    <div class="px-5 sm:px-6 py-4 border-t border-slate-200/70 dark:border-white/5 flex items-center justify-center gap-2">
+        <span class="text-xs text-slate-400 dark:text-slate-500">Page {{ page }} of {{ pages }}</span>
     </div>
     {% endif %}
 </div>

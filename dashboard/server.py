@@ -384,7 +384,7 @@ async def health_page(request: Request) -> Any:
     return templates.TemplateResponse(
         request,
         "health.html",
-        {"admin": admin, "db_status": db_status},
+        {"admin": admin, "db_status": db_status, "port": DASHBOARD_PORT},
     )
 
 
