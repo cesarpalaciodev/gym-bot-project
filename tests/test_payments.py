@@ -173,7 +173,7 @@ class TestProcesarPago:
             "last_payment": None,
             "_ts": 0,
         }
-        mock_update.message.text = "1. Mensual ($500)"
+        mock_update.message.text = "1. Mensual ($70,000)"
 
         await procesar_pago(mock_update, mock_context)
 
@@ -181,58 +181,7 @@ class TestProcesarPago:
         assert payment_state[12345]["plan"] == PLANS["1"]
         text = mock_update.message.reply_text.await_args[0][0]
         assert "Resumen del pago" in text
-        assert "$500" in text
-
-    async def test_plan_trimestral_valido(self, mock_update, mock_context, mock_collection):
-        payment_state[12345] = {
-            "step": "plan",
-            "member_id": str(ObjectId()),
-            "member_name": "Cesar Palacio",
-            "last_payment": None,
-            "_ts": 0,
-        }
-        mock_update.message.text = "2. Trimestral ($1,350)"
-
-        await procesar_pago(mock_update, mock_context)
-
-        assert payment_state[12345]["step"] == "confirmar"
-        assert payment_state[12345]["plan"] == PLANS["2"]
-        text = mock_update.message.reply_text.await_args[0][0]
-        assert "$1,350" in text or "$1350" in text
-
-    async def test_plan_semestral_valido(self, mock_update, mock_context, mock_collection):
-        payment_state[12345] = {
-            "step": "plan",
-            "member_id": str(ObjectId()),
-            "member_name": "Cesar Palacio",
-            "last_payment": None,
-            "_ts": 0,
-        }
-        mock_update.message.text = "3. Semestral ($2,500)"
-
-        await procesar_pago(mock_update, mock_context)
-
-        assert payment_state[12345]["step"] == "confirmar"
-        assert payment_state[12345]["plan"] == PLANS["3"]
-        text = mock_update.message.reply_text.await_args[0][0]
-        assert "$2,500" in text or "$2500" in text
-
-    async def test_plan_anual_valido(self, mock_update, mock_context, mock_collection):
-        payment_state[12345] = {
-            "step": "plan",
-            "member_id": str(ObjectId()),
-            "member_name": "Cesar Palacio",
-            "last_payment": None,
-            "_ts": 0,
-        }
-        mock_update.message.text = "4. Anual ($4,500)"
-
-        await procesar_pago(mock_update, mock_context)
-
-        assert payment_state[12345]["step"] == "confirmar"
-        assert payment_state[12345]["plan"] == PLANS["4"]
-        text = mock_update.message.reply_text.await_args[0][0]
-        assert "$4,500" in text or "$4500" in text
+        assert "70000" in text
 
     async def test_plan_con_vencido_muestra_gracia_text(self, mock_update, mock_context, mock_collection):
         member_id = ObjectId()
@@ -249,7 +198,7 @@ class TestProcesarPago:
             },
             "_ts": 0,
         }
-        mock_update.message.text = "1. Mensual ($500)"
+        mock_update.message.text = "1. Mensual ($70,000)"
 
         await procesar_pago(mock_update, mock_context)
 

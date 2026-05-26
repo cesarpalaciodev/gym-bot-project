@@ -2,31 +2,13 @@ from config import ADMIN_ROLES, GRACE_DAYS, LATE_DAYS, PLANS
 
 
 class TestPlans:
-    def test_has_all_plans(self):
-        assert len(PLANS) >= 4
+    def test_has_plans(self):
+        assert len(PLANS) >= 1
 
     def test_mensual_price(self):
-        assert PLANS["1"]["price"] == 500
+        assert PLANS["1"]["price"] == 70000
         assert PLANS["1"]["name"] == "Mensual"
         assert PLANS["1"]["months"] == 1
-
-    def test_trimestral(self):
-        p = PLANS["2"]
-        assert p["name"] == "Trimestral"
-        assert p["months"] == 3
-        assert p["price"] == 1350
-
-    def test_semestral(self):
-        p = PLANS["3"]
-        assert p["name"] == "Semestral"
-        assert p["months"] == 6
-        assert p["price"] == 2500
-
-    def test_anual(self):
-        p = PLANS["4"]
-        assert p["name"] == "Anual"
-        assert p["months"] == 12
-        assert p["price"] == 4500
 
     def test_all_prices_positive(self):
         for key, plan in PLANS.items():

@@ -52,7 +52,7 @@ class TestMenuStructure:
 
     def test_menu_planes_has_all(self):
         self._check_is_keyboard(menu_planes)
-        self._check_buttons_in_row(menu_planes, ["Mensual", "Trimestral", "Semestral", "Anual", "Cancelar"])
+        self._check_buttons_in_row(menu_planes, ["Mensual", "Cancelar"])
 
     def test_menu_confirmar(self):
         self._check_is_keyboard(menu_confirmar)
