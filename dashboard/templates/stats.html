@@ -8,113 +8,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const resp = await fetch('/api/stats');
         const data = await resp.json();
-        const set = (id, val) => { document.getElementById(id).textContent = val; };
-        const cls = (id, c) => { document.getElementById(id).className = c; };
-
-        set('active-members', data.active_members);
-        set('in-grace', data.in_grace);
-        set('overdue', data.overdue);
-        set('monthly-income', '$' + Number(data.monthly_income).toLocaleString());
-        set('prev-income', '$' + Number(data.previous_month_income).toLocaleString());
-
+        document.getElementById('active-members').textContent = data.active_members;
+        document.getElementById('in-grace').textContent = data.in_grace;
+        document.getElementById('overdue').textContent = data.overdue;
+        document.getElementById('monthly-income').textContent = '$' + Number(data.monthly_income).toLocaleString();
+        document.getElementById('prev-income').textContent = '$' + Number(data.previous_month_income).toLocaleString();
         const pct = data.income_change_pct;
-        set('income-change', (pct >= 0 ? '+' : '') + pct + '%');
-        cls('income-change', pct >= 0
-            ? 'text-emerald-600 dark:text-emerald-400 font-bold'
-            : 'text-red-600 dark:text-red-400 font-bold');
-
-        // Animate in
-        document.querySelectorAll('.stat-card').forEach((el, i) => {
-            el.style.opacity = '0'; el.style.transform = 'translateY(8px)';
-            setTimeout(() => {
-                el.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                el.style.opacity = '1'; el.style.transform = 'translateY(0)';
-            }, i * 80);
-        });
-    } catch (e) {
-        document.getElementById('error-msg').classList.remove('hidden');
-    }
+        const el = document.getElementById('income-change');
+        el.textContent = (pct >= 0 ? '+' : '') + pct + '%';
+        el.className = pct >= 0 ? 'text-stone-700 dark:text-stone-300' : 'text-red-400';
+    } catch (e) { document.getElementById('error-msg').classList.remove('hidden'); }
 });
 </script>
 {% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <h1 class="font-heading text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-        Gym <span class="text-brand-500">Stats</span>
+<div class="mb-16">
+    <h1 class="font-serif text-5xl md:text-6xl font-semibold italic text-stone-900 dark:text-white leading-none">
+        Performance <span class="text-gold-400">metrics</span>
     </h1>
-    <p class="mt-1 text-slate-500 dark:text-slate-400 text-sm">Real-time member and financial metrics</p>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-8">
-    <div class="stat-card bg-white dark:bg-dark-300 rounded-2xl p-6 border border-slate-200/70 dark:border-white/5 shadow-sm hover:shadow-md transition-all duration-300">
-        <div class="flex items-center gap-2.5 mb-3">
-            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <svg class="w-4.5 h-4.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-            </div>
-            <span class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Active</span>
-        </div>
-        <p class="font-heading text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight" id="active-members">--</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 mb-16">
+    <div class="bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-10">
+        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 mb-6">Active</p>
+        <p class="font-serif text-7xl font-light italic text-stone-900 dark:text-white" id="active-members">--</p>
     </div>
-
-    <div class="stat-card bg-white dark:bg-dark-300 rounded-2xl p-6 border border-slate-200/70 dark:border-white/5 shadow-sm hover:shadow-md transition-all duration-300">
-        <div class="flex items-center gap-2.5 mb-3">
-            <div class="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <svg class="w-4.5 h-4.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                </svg>
-            </div>
-            <span class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">In Grace</span>
-        </div>
-        <p class="font-heading text-5xl font-extrabold text-amber-500 tracking-tight" id="in-grace">--</p>
+    <div class="bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-10">
+        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 mb-6">In Grace</p>
+        <p class="font-serif text-7xl font-light italic text-gold-400" id="in-grace">--</p>
     </div>
-
-    <div class="stat-card bg-white dark:bg-dark-300 rounded-2xl p-6 border border-slate-200/70 dark:border-white/5 shadow-sm hover:shadow-md transition-all duration-300">
-        <div class="flex items-center gap-2.5 mb-3">
-            <div class="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center">
-                <svg class="w-4.5 h-4.5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
-                </svg>
-            </div>
-            <span class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Overdue</span>
-        </div>
-        <p class="font-heading text-5xl font-extrabold text-red-500 tracking-tight" id="overdue">--</p>
+    <div class="bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-10">
+        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 mb-6">Overdue</p>
+        <p class="font-serif text-7xl font-light italic text-red-400" id="overdue">--</p>
     </div>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-8">
-    <div class="stat-card bg-white dark:bg-dark-300 rounded-2xl p-6 border border-slate-200/70 dark:border-white/5 shadow-sm">
-        <div class="flex items-center gap-2.5 mb-3">
-            <div class="w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center">
-                <svg class="w-4.5 h-4.5 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
-            </div>
-            <span class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Monthly Income</span>
-        </div>
-        <p class="font-heading text-5xl font-extrabold text-brand-500 tracking-tight" id="monthly-income">--</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-1">
+    <div class="bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-10">
+        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 mb-6">Monthly Income</p>
+        <p class="font-serif text-6xl font-light italic text-stone-900 dark:text-white" id="monthly-income">--</p>
     </div>
-
-    <div class="stat-card bg-white dark:bg-dark-300 rounded-2xl p-6 border border-slate-200/70 dark:border-white/5 shadow-sm">
-        <div class="flex items-center gap-2.5 mb-3">
-            <div class="w-9 h-9 rounded-xl bg-slate-500/10 flex items-center justify-center">
-                <svg class="w-4.5 h-4.5 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
-                </svg>
-            </div>
-            <span class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Previous Month</span>
-        </div>
-        <p class="font-heading text-4xl font-extrabold text-slate-500 dark:text-slate-400 tracking-tight" id="prev-income">--</p>
-        <p class="text-sm mt-2">
-            <span class="text-slate-400 dark:text-slate-500">Change:</span>
-            <span id="income-change">--</span>
-        </p>
+    <div class="bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-10">
+        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 mb-6">Previous Month</p>
+        <p class="font-serif text-5xl font-light italic text-stone-300 dark:text-stone-600" id="prev-income">--</p>
+        <p class="mt-4 text-sm font-light"><span class="text-stone-400">vs:</span> <span id="income-change" class="font-medium">--</span></p>
     </div>
 </div>
 
-<div id="error-msg" class="hidden bg-red-500/10 border border-red-500/30 rounded-xl px-5 py-3 text-red-600 dark:text-red-400 text-sm font-medium">
-    Error loading stats. Please try again.
-</div>
+<div id="error-msg" class="hidden mt-12 p-6 border border-red-200 dark:border-red-500/20 text-red-500 text-sm font-light text-center">Error loading data</div>
 {% endblock %}

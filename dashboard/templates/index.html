@@ -3,130 +3,56 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-8">
-    <h1 class="font-heading text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-        Gym <span class="text-brand-500">Overview</span>
+<div class="mb-16">
+    <h1 class="font-serif text-5xl md:text-6xl font-semibold italic text-stone-900 dark:text-white leading-none">
+        Training <span class="text-gold-400">floor</span>
     </h1>
-    <p class="mt-1 text-slate-500 dark:text-slate-400 text-sm">Real-time snapshot of your gym operations</p>
+    <p class="mt-3 text-stone-500 dark:text-stone-400 text-sm tracking-wide uppercase">at a glance</p>
 </div>
 
-<!-- Stats Cards -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-10">
-    <!-- Active Members -->
-    <div class="group relative bg-white dark:bg-dark-300 rounded-2xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/5 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-500/30 transition-all duration-300 cursor-pointer">
-        <div class="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-bl-[64px] rounded-tr-2xl transition-colors duration-300 group-hover:bg-emerald-500/10"></div>
-        <div class="relative">
-            <div class="flex items-center gap-2 mb-3">
-                <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                    <svg class="w-4.5 h-4.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                </div>
-                <span class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Active</span>
-            </div>
-            <p class="font-heading text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">{{ total_active }}</p>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">registered members</p>
-        </div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-1 mb-20">
+    <div class="group bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-8 hover:border-gold-400/30 dark:hover:border-gold-400/20 transition-all duration-500 cursor-pointer">
+        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 dark:text-stone-500 mb-6">Active</p>
+        <p class="font-serif text-6xl md:text-7xl font-light italic text-stone-900 dark:text-white">{{ total_active }}</p>
+        <p class="text-xs text-stone-400 mt-4 font-light">members</p>
     </div>
-
-    <!-- In Grace -->
-    <div class="group relative bg-white dark:bg-dark-300 rounded-2xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/5 shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-500/30 transition-all duration-300 cursor-pointer">
-        <div class="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 rounded-bl-[64px] rounded-tr-2xl transition-colors duration-300 group-hover:bg-amber-500/10"></div>
-        <div class="relative">
-            <div class="flex items-center gap-2 mb-3">
-                <div class="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                    <svg class="w-4.5 h-4.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                    </svg>
-                </div>
-                <span class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">In Grace</span>
-            </div>
-            <p class="font-heading text-4xl sm:text-5xl font-extrabold text-amber-500 tracking-tight">{{ in_grace }}</p>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">within 4-day window</p>
-        </div>
+    <div class="group bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-8 hover:border-gold-400/30 dark:hover:border-gold-400/20 transition-all duration-500 cursor-pointer">
+        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 dark:text-stone-500 mb-6">In Grace</p>
+        <p class="font-serif text-6xl md:text-7xl font-light italic text-gold-400">{{ in_grace }}</p>
+        <p class="text-xs text-stone-400 mt-4 font-light">within window</p>
     </div>
-
-    <!-- Overdue -->
-    <div class="group relative bg-white dark:bg-dark-300 rounded-2xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/5 shadow-sm hover:shadow-md hover:border-red-300 dark:hover:border-red-500/30 transition-all duration-300 cursor-pointer">
-        <div class="absolute top-0 right-0 w-20 h-20 bg-red-500/5 rounded-bl-[64px] rounded-tr-2xl transition-colors duration-300 group-hover:bg-red-500/10"></div>
-        <div class="relative">
-            <div class="flex items-center gap-2 mb-3">
-                <div class="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center">
-                    <svg class="w-4.5 h-4.5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
-                    </svg>
-                </div>
-                <span class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Overdue</span>
-            </div>
-            <p class="font-heading text-4xl sm:text-5xl font-extrabold text-red-500 tracking-tight">{{ overdue }}</p>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">payment required</p>
-        </div>
+    <div class="group bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-8 hover:border-red-400/30 dark:hover:border-red-400/20 transition-all duration-500 cursor-pointer">
+        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 dark:text-stone-500 mb-6">Overdue</p>
+        <p class="font-serif text-6xl md:text-7xl font-light italic text-red-400">{{ overdue }}</p>
+        <p class="text-xs text-stone-400 mt-4 font-light">late payments</p>
     </div>
-
-    <!-- Monthly Income -->
-    <div class="group relative bg-white dark:bg-dark-300 rounded-2xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/5 shadow-sm hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/30 transition-all duration-300 cursor-pointer">
-        <div class="absolute top-0 right-0 w-20 h-20 bg-brand-500/5 rounded-bl-[64px] rounded-tr-2xl transition-colors duration-300 group-hover:bg-brand-500/10"></div>
-        <div class="relative">
-            <div class="flex items-center gap-2 mb-3">
-                <div class="w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center">
-                    <svg class="w-4.5 h-4.5 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                    </svg>
-                </div>
-                <span class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Income</span>
-            </div>
-            <p class="font-heading text-4xl sm:text-5xl font-extrabold text-brand-500 tracking-tight">${{ "{:,}".format(monthly_income) }}</p>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">this month</p>
-        </div>
+    <div class="group bg-white dark:bg-[#141211] border border-stone-200 dark:border-white/5 p-8 hover:border-gold-400/30 dark:hover:border-gold-400/20 transition-all duration-500 cursor-pointer">
+        <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-stone-400 dark:text-stone-500 mb-6">Income</p>
+        <p class="font-serif text-6xl md:text-7xl font-light italic text-stone-900 dark:text-white">${{ "{:,}".format(monthly_income) }}</p>
+        <p class="text-xs text-stone-400 mt-4 font-light">this month</p>
     </div>
 </div>
 
-<!-- Recent Payments -->
-<div class="bg-white dark:bg-dark-300 rounded-2xl border border-slate-200/70 dark:border-white/5 shadow-sm overflow-hidden">
-    <div class="px-5 sm:px-6 py-4 border-b border-slate-200/70 dark:border-white/5 flex items-center justify-between">
-        <h2 class="font-heading text-lg font-bold text-slate-900 dark:text-white tracking-tight">Recent Payments</h2>
-        <a href="/dashboard/payments" class="text-xs font-semibold text-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors duration-200">
-            View all &rarr;
-        </a>
+<div>
+    <div class="flex items-center justify-between mb-8">
+        <h2 class="font-serif text-2xl italic text-stone-900 dark:text-white">Recent <span class="text-gold-400">payments</span></h2>
+        <a href="/dashboard/payments" class="text-xs font-medium tracking-wide uppercase text-stone-400 hover:text-gold-400 transition-colors duration-300">View all &rarr;</a>
     </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="text-left text-xs uppercase tracking-wider border-b border-slate-200/70 dark:border-white/5">
-                    <th class="px-5 sm:px-6 py-3 font-semibold text-slate-400 dark:text-slate-500">Member</th>
-                    <th class="px-5 sm:px-6 py-3 font-semibold text-slate-400 dark:text-slate-500">Amount</th>
-                    <th class="px-5 sm:px-6 py-3 font-semibold text-slate-400 dark:text-slate-500">Date</th>
-                    <th class="px-5 sm:px-6 py-3 font-semibold text-slate-400 dark:text-slate-500 hidden sm:table-cell">Plan</th>
-                    <th class="px-5 sm:px-6 py-3 font-semibold text-slate-400 dark:text-slate-500 hidden sm:table-cell">Due Date</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-white/5">
-                {% for p in recent_payments %}
-                <tr class="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors duration-150">
-                    <td class="px-5 sm:px-6 py-3.5 font-semibold text-slate-800 dark:text-slate-200">{{ p.member_name }}</td>
-                    <td class="px-5 sm:px-6 py-3.5 font-mono text-emerald-600 dark:text-emerald-400 font-medium">${{ "{:,}".format(p.amount) }}</td>
-                    <td class="px-5 sm:px-6 py-3.5 text-slate-500 dark:text-slate-400">{{ p.payment_date }}</td>
-                    <td class="px-5 sm:px-6 py-3.5 hidden sm:table-cell">
-                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400">{{ p.plan }}</span>
-                    </td>
-                    <td class="px-5 sm:px-6 py-3.5 text-slate-500 dark:text-slate-400 hidden sm:table-cell">{{ p.due_date }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" class="px-6 py-12 text-center text-slate-400 dark:text-slate-500">
-                        <svg class="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/>
-                        </svg>
-                        No payments recorded yet.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="border-t border-stone-200 dark:border-white/5">
+        {% for p in recent_payments %}
+        <div class="group flex items-center justify-between py-5 border-b border-stone-100 dark:border-white/[0.03] hover:bg-stone-50 dark:hover:bg-white/[0.01] transition-all duration-300 px-2 -mx-2">
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-stone-800 dark:text-stone-200 truncate">{{ p.member_name }}</p>
+                <p class="text-xs text-stone-400 mt-0.5 font-light">{{ p.payment_date }}</p>
+            </div>
+            <div class="text-right ml-8">
+                <p class="font-mono text-sm font-medium text-stone-700 dark:text-stone-300">${{ "{:,}".format(p.amount) }}</p>
+                <p class="text-xs text-stone-400 mt-0.5 font-light">{{ p.plan }}</p>
+            </div>
+        </div>
+        {% else %}
+        <p class="py-12 text-center text-stone-300 dark:text-stone-600 text-sm font-light italic">No payments yet</p>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}
