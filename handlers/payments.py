@@ -128,12 +128,12 @@ async def procesar_pago(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             )
 
         elif state["step"] == "confirmar":
-            if texto == "Cancelar":
+            if "Cancelar" in texto:
                 _del_state(user_id)
                 await update.message.reply_text("Operacion cancelada")
                 return
 
-            if texto != "Confirmar":
+            if "Confirmar" not in texto:
                 await update.message.reply_text("Selecciona una opcion valida", reply_markup=menu_confirmar)
                 return
 
