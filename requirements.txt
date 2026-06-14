@@ -11,6 +11,6 @@ aiofiles>=24.1.0
 python-multipart>=0.0.20
 sentry-sdk>=2.0.0
 redis>=5.0.0
-aioredis>=2.0.0
+aioredis>=2.0.1
 tenacity>=8.0.0
 slowapi>=0.1.9
